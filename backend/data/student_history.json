@@ -1,0 +1,15 @@
+{
+  "sarah@uncc.edu": {
+    "completed_courses": [
+      { "id": "ITSC 1212", "term": "Fall 2024", "grade": "A" },
+      { "id": "MATH 1241", "term": "Fall 2024", "grade": "B" }
+    ],
+    "gpa": 3.5
+  },
+  "john@uncc.edu": {
+    "completed_courses": [
+      { "id": "ITSC 1212", "term": "Spring 2024", "grade": "C" }
+    ],
+    "gpa": 2.1
+  }
+}

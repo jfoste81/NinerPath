@@ -1,0 +1,5 @@
+[
+  { "id": "ITSC 1212", "name": "Intro to Computer Science", "credits": 4, "prereqs": [] },
+  { "id": "ITSC 2214", "name": "Data Structures", "credits": 3, "prereqs": ["ITSC 1212"] },
+  { "id": "MATH 1241", "name": "Calculus I", "credits": 3, "prereqs": [] }
+]
