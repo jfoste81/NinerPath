@@ -6,6 +6,10 @@ export default function App() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [dashboardData, setDashboardData] = useState(null);
+  const [generatedSchedule, setGeneratedSchedule] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatorError, setGeneratorError] = useState('');
+  const [selectedConcentration, setSelectedConcentration] = useState('general');
 
   // AUTHENTICATION LISTENER
   useEffect(() => {
@@ -26,10 +30,41 @@ export default function App() {
       // Call Python FastAPI Backend
       fetch(`http://127.0.0.1:8000/api/dashboard/${userId}?email=${userEmail}`)
         .then(res => res.json())
-        .then(data => setDashboardData(data))
+        .then(data => {
+          setDashboardData(data);
+          if (data?.mock_generated_schedule) {
+            setGeneratedSchedule(data.mock_generated_schedule);
+          }
+        })
         .catch(err => console.error("API Error:", err));
     }
   }, [session]);
+
+  const handleGenerateSchedule = async () => {
+    if (!session?.user?.email) return;
+    setGeneratorError('');
+    setIsGenerating(true);
+
+    try {
+      const params = new URLSearchParams({
+        email: session.user.email,
+        concentration: selectedConcentration,
+        max_credits: '15',
+      });
+
+      const response = await fetch(`http://127.0.0.1:8000/api/schedule/generate?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error('Failed to generate schedule.');
+      }
+
+      const data = await response.json();
+      setGeneratedSchedule(data.schedule);
+    } catch (err) {
+      setGeneratorError(err.message || 'Unexpected error during generation.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   // 3. FORM HANDLERS
   const handleLogin = async (e) => {
@@ -175,11 +210,55 @@ export default function App() {
                 ))}
               </ul>
             ) : (
-              <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300 flex flex-col items-center">
-                <p className="text-gray-600 font-medium mb-6 text-lg">You haven't saved any schedules yet.</p>
-                <button className="bg-teal-700 hover:bg-teal-800 text-white font-bold py-3 px-6 rounded-lg shadow-md transition transform hover:-translate-y-0.5">
-                  Generate New Schedule
-                </button>
+              <div className="py-8 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                <p className="text-gray-600 font-medium mb-4 text-lg text-center">You haven't saved any schedules yet.</p>
+
+                <div className="flex flex-col md:flex-row gap-3 justify-center items-center mb-4 px-4">
+                  <select
+                    value={selectedConcentration}
+                    onChange={(e) => setSelectedConcentration(e.target.value)}
+                    className="border border-gray-300 rounded px-3 py-2 bg-white text-gray-700"
+                  >
+                    <option value="general">General Computer Science</option>
+                    <option value="cybersecurity">Cybersecurity</option>
+                    <option value="ai_and_data_science">AI and Data Science</option>
+                    <option value="software_engineering">Software Engineering</option>
+                  </select>
+                  <button
+                    onClick={handleGenerateSchedule}
+                    disabled={isGenerating}
+                    className="bg-teal-700 hover:bg-teal-800 text-white font-bold py-3 px-6 rounded-lg shadow-md transition disabled:bg-gray-400"
+                  >
+                    {isGenerating ? 'Generating...' : 'Generate New Schedule'}
+                  </button>
+                </div>
+
+                {generatorError && (
+                  <p className="text-center text-red-600 text-sm mb-3">{generatorError}</p>
+                )}
+
+                {generatedSchedule && (
+                  <div className="mx-4 mt-4 bg-white rounded-lg border border-teal-200 p-4">
+                    <h3 className="font-bold text-teal-900 text-lg">
+                      {generatedSchedule.target_term} Recommendations ({generatedSchedule.generated_credits} credits)
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-3">{generatedSchedule.concentration_label}</p>
+                    {generatedSchedule.recommended_courses.length > 0 ? (
+                      <ul className="space-y-2">
+                        {generatedSchedule.recommended_courses.map((course) => (
+                          <li key={course.id} className="flex justify-between border-b border-gray-100 pb-2">
+                            <span className="font-semibold text-gray-800">{course.id}: {course.name}</span>
+                            <span className="text-sm text-gray-500">{course.credits} cr</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-gray-500">
+                        No eligible classes were found for this term. Try another concentration or term.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             )
           ) : (

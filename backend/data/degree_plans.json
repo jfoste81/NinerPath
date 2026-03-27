@@ -1,0 +1,134 @@
+{
+  "computer_science": {
+    "name": "B.S. Computer Science",
+    "catalog_year": "2025-2026",
+    "concentrations": {
+      "general": {
+        "label": "General Computer Science",
+        "required_courses": [
+          "ITSC 1212",
+          "ITSC 1213",
+          "MATH 1241",
+          "MATH 1242",
+          "STAT 1220",
+          "ITSC 2175",
+          "ITSC 2214",
+          "ITSC 2181",
+          "ITSC 3146",
+          "ITSC 3155",
+          "ITSC 3160",
+          "ITSC 3688",
+          "ITSC 4114",
+          "ITSC 4155",
+          "ITSC 4090",
+          "ITSC 4190"
+        ],
+        "elective_pool": [
+          "ITSC 4231",
+          "ITSC 4420",
+          "ITSC 4600",
+          "ITSC 4675",
+          "ITSC 4681",
+          "ITSC 4280",
+          "ITSC 4290",
+          "ITSC 4365",
+          "ITSC 4555"
+        ],
+        "elective_count": 2
+      },
+      "cybersecurity": {
+        "label": "Cybersecurity Concentration",
+        "required_courses": [
+          "ITSC 1212",
+          "ITSC 1213",
+          "MATH 1241",
+          "MATH 1242",
+          "STAT 1220",
+          "ITSC 2175",
+          "ITSC 2214",
+          "ITSC 2181",
+          "ITSC 3146",
+          "ITSC 3155",
+          "ITSC 3160",
+          "ITSC 3688",
+          "ITSC 4114",
+          "ITSC 4155",
+          "ITSC 4090",
+          "ITSC 4190",
+          "ITSC 4231",
+          "ITSC 4280",
+          "ITSC 4290"
+        ],
+        "elective_pool": [
+          "ITSC 4420",
+          "ITSC 4600",
+          "ITSC 4555",
+          "ITSC 4365"
+        ],
+        "elective_count": 1
+      },
+      "ai_and_data_science": {
+        "label": "AI and Data Science Concentration",
+        "required_courses": [
+          "ITSC 1212",
+          "ITSC 1213",
+          "MATH 1241",
+          "MATH 1242",
+          "STAT 1220",
+          "ITSC 2175",
+          "ITSC 2214",
+          "ITSC 2181",
+          "ITSC 3146",
+          "ITSC 3155",
+          "ITSC 3160",
+          "ITSC 3688",
+          "ITSC 4114",
+          "ITSC 4155",
+          "ITSC 4090",
+          "ITSC 4190",
+          "ITSC 4600",
+          "ITSC 4675",
+          "ITSC 4681"
+        ],
+        "elective_pool": [
+          "ITSC 4231",
+          "ITSC 4555",
+          "ITSC 4420",
+          "ITSC 4365"
+        ],
+        "elective_count": 1
+      },
+      "software_engineering": {
+        "label": "Software Engineering Concentration",
+        "required_courses": [
+          "ITSC 1212",
+          "ITSC 1213",
+          "MATH 1241",
+          "MATH 1242",
+          "STAT 1220",
+          "ITSC 2175",
+          "ITSC 2214",
+          "ITSC 2181",
+          "ITSC 3146",
+          "ITSC 3155",
+          "ITSC 3160",
+          "ITSC 3688",
+          "ITSC 4114",
+          "ITSC 4155",
+          "ITSC 4090",
+          "ITSC 4190",
+          "ITSC 4365",
+          "ITSC 4555"
+        ],
+        "elective_pool": [
+          "ITSC 4231",
+          "ITSC 4600",
+          "ITSC 4675",
+          "ITSC 4681",
+          "ITSC 4420"
+        ],
+        "elective_count": 2
+      }
+    }
+  }
+}
