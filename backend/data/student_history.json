@@ -1,15 +1,37 @@
 {
   "sarah@uncc.edu": {
+    "gpa": 3.85,
     "completed_courses": [
-      { "id": "ITSC 1212", "term": "Fall 2024", "grade": "A" },
-      { "id": "MATH 1241", "term": "Fall 2024", "grade": "B" }
-    ],
-    "gpa": 3.5
+      {
+        "id": "ITCS 1212",
+        "term": "Fall 2022",
+        "grade": "A"
+      },
+      {
+        "id": "MATH 1241",
+        "term": "Fall 2022",
+        "grade": "B"
+      },
+      {
+        "id": "ITCS 1213",
+        "term": "Spring 2023",
+        "grade": "A"
+      }
+    ]
   },
-  "john@uncc.edu": {
+  "josh@uncc.edu": {
+    "gpa": 3.42,
     "completed_courses": [
-      { "id": "ITSC 1212", "term": "Spring 2024", "grade": "C" }
-    ],
-    "gpa": 2.1
+      {
+        "id": "ITCS 3146",
+        "term": "Spring 2023",
+        "grade": "B"
+      },
+      {
+        "id": "ITCS 3160",
+        "term": "Fall 2023",
+        "grade": "A"
+      }
+    ]
   }
 }
