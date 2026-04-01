@@ -33,7 +33,7 @@ def load_json(filename):
 COURSES = load_json("courses.json")
 COURSE_BY_ID = {course["id"]: course for course in COURSES}
 DEGREE_PLANS = load_json("degree_plans.json")
-
+GEN_EDS = load_json("gen_eds.json")
 
 def get_current_term_label():
     now = datetime.now()
