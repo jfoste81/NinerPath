@@ -51,7 +51,27 @@ def compute_dependent_counts(course_list):
 
 
 DEPENDENT_COUNTS = compute_dependent_counts(COURSES)
+def get_gen_ed_progress(student_history, gen_eds):
+    completed_ids = {
+        course["id"] for course in student_history.get("completed_courses", [])
+    }
 
+    progress = []
+
+    for category in gen_eds:
+        completed_courses = [
+            course_id for course_id in category["courses"]
+            if course_id in completed_ids
+        ]
+
+        progress.append({
+            "category": category["category"],
+            "completed_courses": completed_courses,
+            "completed_count": len(completed_courses),
+            "required_credits": category["required_credits"]
+        })
+
+    return progress
 
 def parse_course_number(course_id):
     try:
@@ -176,6 +196,19 @@ async def get_dashboard_data(user_id: str, email: str):
 @app.get("/api/degree-plans")
 async def get_degree_plans():
     return DEGREE_PLANS
+
+@app.get("/api/geneds/{email}")
+async def get_gen_ed_status(email: str):
+    history_data = load_json("student_history.json")
+    
+    student_history = history_data.get(email)
+    if not student_history:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    return {
+        "email": email,
+        "gen_ed_progress": get_gen_ed_progress(student_history, GEN_EDS)
+    }
 
 
 @app.get("/api/schedule/generate")
