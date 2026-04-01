@@ -6,6 +6,9 @@ export default function App() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [dashboardData, setDashboardData] = useState(null);
+  const [generating, setGenerating] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   // AUTHENTICATION LISTENER
   useEffect(() => {
@@ -43,6 +46,92 @@ export default function App() {
     const { error } = await supabase.auth.signUp({ email, password });
     if (error) alert(error.message);
     else alert("Success! Check your email to confirm your account.");
+  };
+
+  // Small client-side mock to generate a schedule and update UI state
+  const handleGenerateSchedule = () => {
+    setGenerating(true);
+
+    const newSchedule = {
+      id: `local-${Date.now()}`,
+      term: 'Fall 2026',
+      generated_at: new Date().toISOString(),
+      courses: [
+        { code: 'CS4010', title: 'Algorithms', credits: 3 },
+        { code: 'CS4150', title: 'Software Engineering', credits: 3 },
+        { code: 'MATH2210', title: 'Linear Algebra', credits: 3 }
+      ]
+    };
+
+    setDashboardData(prev => {
+      if (!prev) return { history: { completed_courses: [], gpa: 0 }, upcoming: [newSchedule] };
+      return { ...prev, upcoming: [newSchedule, ...(prev.upcoming || [])] };
+    });
+
+    // show the generating state briefly
+    setTimeout(() => setGenerating(false), 600);
+  };
+
+
+  // Small client-side mock to generate a schedule and update UI state
+  const handleGenerateSchedule = () => {
+    setGenerating(true);
+
+    const newSchedule = {
+      id: `local-${Date.now()}`,
+      term: 'Fall 2026',
+      generated_at: new Date().toISOString(),
+      courses: [
+        { code: 'CS4010', title: 'Algorithms', credits: 3 },
+        { code: 'CS4150', title: 'Software Engineering', credits: 3 },
+        { code: 'MATH2210', title: 'Linear Algebra', credits: 3 }
+      ]
+    };
+
+    setDashboardData(prev => {
+      if (!prev) return { history: { completed_courses: [], gpa: 0 }, upcoming: [newSchedule] };
+      return { ...prev, upcoming: [newSchedule, ...(prev.upcoming || [])] };
+    });
+
+    // show the generating state briefly
+    setTimeout(() => setGenerating(false), 600);
+  };
+
+  // GENERATE NEW SCHEDULE (client-side mock)
+  const handleGenerateSchedule = async () => {
+    try {
+      setGenerating(true);
+
+      const exampleCourses = dashboardData?.history?.completed_courses?.slice(0,3).map((c, i) => ({
+        code: c.id || `COURSE${i+1}`,
+        title: c.title || `Sample Course ${i+1}`,
+        credits: 3
+      })) || [
+        { code: 'CS4010', title: 'Algorithms', credits: 3 },
+        { code: 'CS4150', title: 'Software Engineering', credits: 3 },
+        { code: 'MATH2210', title: 'Linear Algebra', credits: 3 }
+      ];
+
+      const newSchedule = {
+        id: `local-${Date.now()}`,
+        term: 'Fall 2026',
+        generated_at: new Date().toISOString(),
+        courses: exampleCourses
+      };
+
+      setDashboardData(prev => {
+        if (!prev) return { history: { completed_courses: [], gpa: 0 }, upcoming: [newSchedule] };
+        return { ...prev, upcoming: [newSchedule, ...(prev.upcoming || [])] };
+      });
+
+      // brief pause so users see the generating state
+      await new Promise(r => setTimeout(r, 600));
+    } catch (err) {
+      console.error('Generate schedule error:', err);
+      alert('Unable to generate schedule locally. See console for details.');
+    } finally {
+      setGenerating(false);
+    }
   };
 
   // ==========================================
