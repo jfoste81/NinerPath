@@ -1,10 +1,11 @@
 {
-  "computer_science": {
-    "name": "B.S. Computer Science",
+  "bs_computer_science": {
+    "name": "B.S. in Computer Science",
     "catalog_year": "2025-2026",
+    "default_concentration": "systems_and_networks",
     "concentrations": {
-      "general": {
-        "label": "General Computer Science",
+      "systems_and_networks": {
+        "label": "Systems and Networks",
         "required_courses": [
           "ITSC 1212",
           "ITSC 1213",
@@ -21,23 +22,67 @@
           "ITSC 4114",
           "ITSC 4155",
           "ITSC 4090",
-          "ITSC 4190"
-        ],
-        "elective_pool": [
-          "ITSC 4231",
+          "ITSC 4190",
           "ITSC 4420",
-          "ITSC 4600",
-          "ITSC 4675",
-          "ITSC 4681",
-          "ITSC 4280",
-          "ITSC 4290",
-          "ITSC 4365",
-          "ITSC 4555"
+          "ITSC 4231"
         ],
+        "elective_pool": ["ITSC 4555", "ITSC 4365", "ITSC 4600", "ITSC 4681", "ITSC 4290"],
         "elective_count": 2
       },
+      "ai_robotics_and_gaming": {
+        "label": "AI, Robotics and Gaming",
+        "required_courses": [
+          "ITSC 1212",
+          "ITSC 1213",
+          "MATH 1241",
+          "MATH 1242",
+          "STAT 1220",
+          "ITSC 2175",
+          "ITSC 2214",
+          "ITSC 2181",
+          "ITSC 3146",
+          "ITSC 3155",
+          "ITSC 3160",
+          "ITSC 3688",
+          "ITSC 4114",
+          "ITSC 4155",
+          "ITSC 4090",
+          "ITSC 4190",
+          "ITSC 4600",
+          "ITSC 3050",
+          "ITSC 3260"
+        ],
+        "elective_pool": ["ITSC 3060", "ITSC 4260", "ITSC 4675", "ITSC 4681", "ITSC 4555"],
+        "elective_count": 2
+      },
+      "bioinformatics": {
+        "label": "Bioinformatics (B.S.)",
+        "required_courses": [
+          "ITSC 1212",
+          "ITSC 1213",
+          "MATH 1241",
+          "MATH 1242",
+          "STAT 1220",
+          "ITSC 2175",
+          "ITSC 2214",
+          "ITSC 2181",
+          "ITSC 3146",
+          "ITSC 3155",
+          "ITSC 3160",
+          "ITSC 3688",
+          "ITSC 4114",
+          "ITSC 4155",
+          "ITSC 4090",
+          "ITSC 4190",
+          "BINF 2101",
+          "BINF 3101",
+          "ITSC 4681"
+        ],
+        "elective_pool": ["ITSC 4600", "ITSC 4675", "CHEM 1251", "BIOL 1110"],
+        "elective_count": 1
+      },
       "cybersecurity": {
-        "label": "Cybersecurity Concentration",
+        "label": "Cybersecurity",
         "required_courses": [
           "ITSC 1212",
           "ITSC 1213",
@@ -56,19 +101,13 @@
           "ITSC 4090",
           "ITSC 4190",
           "ITSC 4231",
-          "ITSC 4280",
           "ITSC 4290"
         ],
-        "elective_pool": [
-          "ITSC 4420",
-          "ITSC 4600",
-          "ITSC 4555",
-          "ITSC 4365"
-        ],
-        "elective_count": 1
+        "elective_pool": ["ITSC 4280", "ITSC 4420", "ITSC 4555", "ITSC 4365"],
+        "elective_count": 2
       },
-      "ai_and_data_science": {
-        "label": "AI and Data Science Concentration",
+      "data_science": {
+        "label": "Data Science",
         "required_courses": [
           "ITSC 1212",
           "ITSC 1213",
@@ -90,16 +129,11 @@
           "ITSC 4675",
           "ITSC 4681"
         ],
-        "elective_pool": [
-          "ITSC 4231",
-          "ITSC 4555",
-          "ITSC 4420",
-          "ITSC 4365"
-        ],
-        "elective_count": 1
+        "elective_pool": ["ITSC 4555", "ITSC 4365", "ITSC 4420", "ITSC 4231"],
+        "elective_count": 2
       },
-      "software_engineering": {
-        "label": "Software Engineering Concentration",
+      "web_mobile_and_software_engineering": {
+        "label": "Web/Mobile Development and Software Engineering",
         "required_courses": [
           "ITSC 1212",
           "ITSC 1213",
@@ -117,16 +151,78 @@
           "ITSC 4155",
           "ITSC 4090",
           "ITSC 4190",
-          "ITSC 4365",
-          "ITSC 4555"
+          "ITSC 4555",
+          "ITSC 3290",
+          "ITSC 4365"
         ],
-        "elective_pool": [
+        "elective_pool": ["ITSC 4420", "ITSC 4231", "ITSC 4600"],
+        "elective_count": 1
+      }
+    }
+  },
+  "ba_computer_science": {
+    "name": "B.A. in Computer Science",
+    "catalog_year": "2025-2026",
+    "default_concentration": "information_technology",
+    "concentrations": {
+      "information_technology": {
+        "label": "Information Technology",
+        "required_courses": [
+          "ITSC 1212",
+          "ITSC 1213",
+          "ITSC 1600",
+          "ITSC 2175",
+          "ITSC 2214",
+          "ITSC 2181",
+          "ITSC 3155",
+          "ITSC 3160",
+          "ITSC 3146",
+          "ITSC 3688",
           "ITSC 4231",
-          "ITSC 4600",
-          "ITSC 4675",
-          "ITSC 4681",
-          "ITSC 4420"
+          "MATH 1241",
+          "STAT 1220"
         ],
+        "elective_pool": ["ITSC 4555", "ITSC 3290", "ITSC 4420"],
+        "elective_count": 3
+      },
+      "human_computer_interaction": {
+        "label": "Human-Computer Interaction",
+        "required_courses": [
+          "ITSC 1212",
+          "ITSC 1213",
+          "ITSC 1600",
+          "ITSC 2175",
+          "ITSC 2214",
+          "ITSC 2181",
+          "ITSC 3123",
+          "ITSC 3155",
+          "ITSC 3160",
+          "ITSC 4555",
+          "ITSC 3688",
+          "MATH 1241",
+          "STAT 1220"
+        ],
+        "elective_pool": ["ITSC 3290", "ITSC 4365", "ITSC 3146"],
+        "elective_count": 3
+      },
+      "bioinformatics": {
+        "label": "Bioinformatics (B.A.)",
+        "required_courses": [
+          "ITSC 1212",
+          "ITSC 1213",
+          "ITSC 1600",
+          "ITSC 2175",
+          "ITSC 2214",
+          "MATH 1241",
+          "MATH 1242",
+          "STAT 1220",
+          "BINF 2101",
+          "BINF 3101",
+          "ITSC 4681",
+          "ITSC 3688",
+          "CHEM 1251"
+        ],
+        "elective_pool": ["ITSC 3160", "ITSC 3155", "BIOL 1110", "ITSC 4600"],
         "elective_count": 2
       }
     }
