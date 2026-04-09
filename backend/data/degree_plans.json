@@ -3,6 +3,31 @@
     "name": "B.S. in Computer Science",
     "catalog_year": "2025-2026",
     "default_concentration": "systems_and_networks",
+
+    "added_requirements": {
+      "note": "Added to reach ~120 total credits. Original structure unchanged.",
+      "general_education": {
+        "writing": ["ENGL 1103", "ENGL 1104"],
+        "communication": ["COMM 1101"],
+        "mathematics_support": ["MATH 2164"],
+        "natural_sciences": ["PHYS 2101", "PHYS 2101L", "CHEM 1251", "CHEM 1251L"],
+        "social_sciences": ["POLS 1110", "ECON 1101"],
+        "humanities": ["HIST 1160", "PHIL 1100"],
+        "arts": ["ARTS 1110"],
+        "liberal_studies": ["LBST 2101", "LBST 2102", "LBST 2211"]
+      },
+      "free_electives": {
+        "count": 5,
+        "examples": [
+          "Any elective 1000-4000 level",
+          "Minor-related courses",
+          "ITSC 3681",
+          "Additional ITSC elective",
+          "Upper-level elective outside major"
+        ]
+      }
+    },
+
     "concentrations": {
       "systems_and_networks": {
         "label": "Systems and Networks",
@@ -29,6 +54,7 @@
         "elective_pool": ["ITSC 4555", "ITSC 4365", "ITSC 4600", "ITSC 4681", "ITSC 4290"],
         "elective_count": 2
       },
+
       "ai_robotics_and_gaming": {
         "label": "AI, Robotics and Gaming",
         "required_courses": [
@@ -55,6 +81,7 @@
         "elective_pool": ["ITSC 3060", "ITSC 4260", "ITSC 4675", "ITSC 4681", "ITSC 4555"],
         "elective_count": 2
       },
+
       "bioinformatics": {
         "label": "Bioinformatics (B.S.)",
         "required_courses": [
@@ -81,6 +108,7 @@
         "elective_pool": ["ITSC 4600", "ITSC 4675", "CHEM 1251", "BIOL 1110"],
         "elective_count": 1
       },
+
       "cybersecurity": {
         "label": "Cybersecurity",
         "required_courses": [
@@ -106,6 +134,7 @@
         "elective_pool": ["ITSC 4280", "ITSC 4420", "ITSC 4555", "ITSC 4365"],
         "elective_count": 2
       },
+
       "data_science": {
         "label": "Data Science",
         "required_courses": [
@@ -132,6 +161,7 @@
         "elective_pool": ["ITSC 4555", "ITSC 4365", "ITSC 4420", "ITSC 4231"],
         "elective_count": 2
       },
+
       "web_mobile_and_software_engineering": {
         "label": "Web/Mobile Development and Software Engineering",
         "required_courses": [
@@ -160,10 +190,33 @@
       }
     }
   },
+
   "ba_computer_science": {
     "name": "B.A. in Computer Science",
     "catalog_year": "2025-2026",
     "default_concentration": "information_technology",
+
+    "added_requirements": {
+      "general_education": {
+        "writing": ["ENGL 1103", "ENGL 1104"],
+        "communication": ["COMM 1101"],
+        "natural_sciences": ["CHEM 1251", "CHEM 1251L"],
+        "social_sciences": ["POLS 1110", "ECON 1101"],
+        "humanities": ["HIST 1160", "PHIL 1100"],
+        "arts": ["ARTS 1110"],
+        "liberal_studies": ["LBST 2101", "LBST 2102", "LBST 2211"]
+      },
+      "free_electives": {
+        "count": 6,
+        "examples": [
+          "Any electives",
+          "Minor courses",
+          "Upper-level electives",
+          "Internship credit"
+        ]
+      }
+    },
+
     "concentrations": {
       "information_technology": {
         "label": "Information Technology",
@@ -185,6 +238,7 @@
         "elective_pool": ["ITSC 4555", "ITSC 3290", "ITSC 4420"],
         "elective_count": 3
       },
+
       "human_computer_interaction": {
         "label": "Human-Computer Interaction",
         "required_courses": [
@@ -205,6 +259,7 @@
         "elective_pool": ["ITSC 3290", "ITSC 4365", "ITSC 3146"],
         "elective_count": 3
       },
+
       "bioinformatics": {
         "label": "Bioinformatics (B.A.)",
         "required_courses": [
