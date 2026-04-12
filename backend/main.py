@@ -3,15 +3,25 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
 from dotenv import load_dotenv
+import asyncio
 import json
 import os
 from itertools import combinations
 import re
-from typing import Optional
+from typing import Optional, Any, Iterable
 
 # Full-time floor and typical target for generated recommendations (credit hours)
 SCHEDULE_TARGET_MIN_CREDITS = 12
 SCHEDULE_TARGET_IDEAL_CREDITS = 15
+
+# Class standing thresholds (earned credit hours). Used when student history has no explicit standing.
+STANDING_ORDER = ("Freshman", "Sophomore", "Junior", "Senior")
+STANDING_RANK = {name: i for i, name in enumerate(STANDING_ORDER)}
+STANDING_THRESHOLDS = (
+    (30, "Sophomore"),
+    (60, "Junior"),
+    (90, "Senior"),
+)
 
 # Load variables from the .env file
 load_dotenv()
@@ -20,7 +30,8 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"], 
+    # Vite default; include both hostnames so either URL in the browser works
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -38,6 +49,129 @@ def load_json(filename):
 
 COURSES = load_json("courses.json")
 COURSE_BY_ID = {course["id"]: course for course in COURSES}
+
+
+def _normalize_standing_label(label: Optional[str]) -> Optional[str]:
+    if not label or not str(label).strip():
+        return None
+    s = str(label).strip().lower()
+    for name in STANDING_ORDER:
+        if name.lower() == s:
+            return name
+    return None
+
+
+def infer_class_standing_from_credits(earned_credits: float) -> str:
+    standing = "Freshman"
+    for threshold, name in STANDING_THRESHOLDS:
+        if earned_credits >= threshold:
+            standing = name
+    return standing
+
+
+def earned_credits_from_completed(completed_ids: Iterable[str]) -> float:
+    total = 0.0
+    for cid in completed_ids:
+        meta = COURSE_BY_ID.get(cid)
+        if meta:
+            total += float(meta.get("credits") or 0)
+    return total
+
+
+def effective_class_standing(completed_ids: Iterable[str], override: Optional[str] = None) -> str:
+    fixed = _normalize_standing_label(override)
+    if fixed:
+        return fixed
+    return infer_class_standing_from_credits(earned_credits_from_completed(completed_ids))
+
+
+def standing_satisfies_min(student_standing: str, min_standing: Optional[str]) -> bool:
+    if not min_standing or not str(min_standing).strip():
+        return True
+    req = _normalize_standing_label(min_standing)
+    if not req:
+        return True
+    su = _normalize_standing_label(student_standing)
+    if not su:
+        su = "Freshman"
+    return STANDING_RANK.get(su, 0) >= STANDING_RANK.get(req, 0)
+
+
+def _prereq_token_satisfied(token: str, completed: set) -> bool:
+    """One catalog slot: course id or compound 'ID and ID ...' (all parts completed)."""
+    if not token or not isinstance(token, str):
+        return False
+    if " and " in token:
+        parts = [p.strip() for p in token.split(" and ") if p.strip()]
+        return bool(parts) and all(p in completed for p in parts)
+    return token in completed
+
+
+def _prereqs_or_group_satisfied(or_group: list, completed: set) -> bool:
+    """Any alternative satisfies the group; nested lists are nested OR."""
+    if not or_group:
+        return False
+    for alt in or_group:
+        if isinstance(alt, str):
+            if _prereq_token_satisfied(alt, completed):
+                return True
+        elif isinstance(alt, list):
+            if _prereqs_or_group_satisfied(alt, completed):
+                return True
+        else:
+            return False
+    return False
+
+
+def prereqs_satisfied_tree(prereqs: Any, completed: set) -> bool:
+    """
+    Top-level prereqs: conjunction (AND) of conjuncts. Each list conjunct is one OR group.
+    """
+    if not prereqs:
+        return True
+    if not isinstance(prereqs, list):
+        return False
+    for conjunct in prereqs:
+        if isinstance(conjunct, str):
+            if not _prereq_token_satisfied(conjunct, completed):
+                return False
+        elif isinstance(conjunct, list):
+            if not _prereqs_or_group_satisfied(conjunct, completed):
+                return False
+        else:
+            return False
+    return True
+
+
+def _iter_compound_course_ids(token: str) -> Iterable[str]:
+    if " and " in token:
+        for p in token.split(" and "):
+            p = p.strip()
+            if p:
+                yield p
+    else:
+        yield token
+
+
+def _iter_or_group_course_ids(or_group: list) -> Iterable[str]:
+    for alt in or_group:
+        if isinstance(alt, str):
+            yield from _iter_compound_course_ids(alt)
+        elif isinstance(alt, list):
+            yield from _iter_or_group_course_ids(alt)
+
+
+def iter_prereq_course_ids(prereqs: Any) -> Iterable[str]:
+    """Course ids referenced in a prereq tree (for sorting / dependents)."""
+    if not prereqs or not isinstance(prereqs, list):
+        return
+    for conjunct in prereqs:
+        if isinstance(conjunct, str):
+            yield from _iter_compound_course_ids(conjunct)
+        elif isinstance(conjunct, list):
+            yield from _iter_or_group_course_ids(conjunct)
+
+
 DEGREE_PLANS = load_json("degree_plans.json")
 GEN_EDS = load_json("gen_eds.json")
 
@@ -51,6 +185,15 @@ if _tl:
         for s in _fall_26_offerings.get("sections", [])
         if s.get("course_id")
     }
+
+# All mock scheduling uses this term (Fall 2026 offerings catalog only).
+REGISTRATION_TERM_LABEL = (_fall_26_offerings.get("term") or "Fall 2026").strip() or "Fall 2026"
+REGISTRATION_TERM_SEASON = REGISTRATION_TERM_LABEL.split()[0] if REGISTRATION_TERM_LABEL.split() else "Fall"
+
+
+def registration_schedule_term() -> tuple[str, str]:
+    """Sole registration term for schedule generation and section calendar (Fall 2026 mock data)."""
+    return REGISTRATION_TERM_LABEL, REGISTRATION_TERM_SEASON
 
 
 def get_current_term_label():
@@ -230,7 +373,7 @@ def attach_schedule_variants(schedule_dict: dict, term_label: Optional[str], max
 def compute_dependent_counts(course_list):
     dependent_counts = {course["id"]: 0 for course in course_list}
     for course in course_list:
-        for prereq in course.get("prereqs", []):
+        for prereq in iter_prereq_course_ids(course.get("prereqs") or []):
             if prereq in dependent_counts:
                 dependent_counts[prereq] += 1
     return dependent_counts
@@ -332,9 +475,306 @@ def _strict_prereq_filter(course_dicts: list, completed_ids: set) -> list:
         cid = c["id"]
         meta = COURSE_BY_ID.get(cid, c)
         prereqs = meta.get("prereqs") or []
-        if all(p in done for p in prereqs):
+        if prereqs_satisfied_tree(prereqs, done):
             out.append(c)
     return out
+
+
+def _dedupe_preserve(seq: list) -> list:
+    seen, out = set(), []
+    for x in seq:
+        if x not in seen:
+            seen.add(x)
+            out.append(x)
+    return out
+
+
+def _extend_course_strings(seq, out: list) -> None:
+    """Append course id strings; recurse one level into lists (legacy nested prereq-style lists)."""
+    if not seq:
+        return
+    for item in seq:
+        if isinstance(item, str) and item.strip():
+            out.append(item.strip())
+        elif isinstance(item, list):
+            for sub in item:
+                if isinstance(sub, str) and sub.strip():
+                    out.append(sub.strip())
+
+
+def normalize_degree_plan_for_schedule(plan_root: dict, conc_key: str, raw: dict) -> dict:
+    """
+    Derive required_course_ids, elective_pool_ids, max_elective_picks, and label from degree_plans.json.
+    Supports legacy keys (required_courses, elective_pool, elective_count) and current shapes
+    (major_core on the degree, electives.choose/options, elective_subarea_*, required_options, etc.).
+    """
+    required: list[str] = []
+    pool: list[str] = []
+
+    _extend_course_strings(plan_root.get("major_core"), required)
+    _extend_course_strings(plan_root.get("math_and_statistics"), required)
+
+    for item in raw.get("major_core") or []:
+        if isinstance(item, str) and item.strip():
+            required.append(item.strip())
+        elif isinstance(item, list):
+            for sub in item:
+                if isinstance(sub, str) and sub.strip():
+                    pool.append(sub.strip())
+
+    _extend_course_strings(raw.get("advanced_statistics"), required)
+    _extend_course_strings(raw.get("related_courses"), required)
+    _extend_course_strings(raw.get("required_courses"), required)
+    _extend_course_strings(raw.get("required_options"), required)
+
+    electives_obj = raw.get("electives")
+    if isinstance(electives_obj, dict):
+        _extend_course_strings(electives_obj.get("options"), pool)
+
+    for k, v in raw.items():
+        if str(k).startswith("elective_subarea_") and isinstance(v, list):
+            _extend_course_strings(v, pool)
+
+    _extend_course_strings(raw.get("required_security_elective"), pool)
+    _extend_course_strings(raw.get("elective_pool"), pool)
+    _extend_course_strings(plan_root.get("capstone_options"), pool)
+
+    required = _dedupe_preserve(required)
+    req_set = set(required)
+    pool = [x for x in _dedupe_preserve(pool) if x not in req_set]
+
+    max_e = raw.get("elective_count")
+    if max_e is None and isinstance(electives_obj, dict):
+        max_e = electives_obj.get("choose")
+    subareas = [k for k in raw if str(k).startswith("elective_subarea_")]
+    if max_e is None and subareas:
+        max_e = len(subareas)
+    if max_e is None:
+        max_e = 0
+    max_e = max(0, int(max_e))
+    if plan_root.get("capstone_options"):
+        max_e += 1
+
+    label = raw.get("label") or conc_key.replace("_", " ").title()
+
+    return {
+        "required_course_ids": required,
+        "elective_pool_ids": pool,
+        "max_elective_picks": max_e,
+        "concentration_label": label,
+    }
+
+
+def _catalog_credits(cid: str) -> int:
+    m = COURSE_BY_ID.get(cid) or {}
+    try:
+        return int(m.get("credits") or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _audit_row_course(cid: str, by_id: dict, completed_set: set) -> dict:
+    meta = COURSE_BY_ID.get(cid) or {}
+    name = meta.get("name", cid)
+    credits = _catalog_credits(cid)
+    rec = by_id.get(cid)
+    if rec:
+        grade = str(rec.get("grade", "")).strip() or "—"
+        up = grade.upper()
+        status = "registered" if up == "REG" else "completed"
+        return {
+            "kind": "course",
+            "course_id": cid,
+            "title": name,
+            "status": status,
+            "grade": grade,
+            "credits": credits,
+            "term": rec.get("term") or "—",
+            "repeated": "",
+        }
+    return {
+        "kind": "course",
+        "course_id": cid,
+        "title": name,
+        "status": "incomplete",
+        "grade": "—",
+        "credits": credits,
+        "term": "—",
+        "repeated": "",
+    }
+
+
+def _audit_row_choice(alternatives: list, by_id: dict, completed_set: set) -> dict:
+    alts = [a.strip() for a in alternatives if isinstance(a, str) and a.strip()]
+    taken = [a for a in alts if a in completed_set]
+    label = " or ".join(alts)
+    if taken:
+        cid = taken[0]
+        meta = COURSE_BY_ID.get(cid) or {}
+        rec = by_id[cid]
+        grade = str(rec.get("grade", "")).strip() or "—"
+        up = grade.upper()
+        status = "registered" if up == "REG" else "completed"
+        return {
+            "kind": "choice",
+            "course_id": label,
+            "title": meta.get("name", cid),
+            "status": status,
+            "grade": grade,
+            "credits": _catalog_credits(cid),
+            "term": rec.get("term") or "—",
+            "repeated": "",
+            "alternatives": alts,
+        }
+    return {
+        "kind": "choice",
+        "course_id": label,
+        "title": f"Still needed: 1 class in {label}",
+        "status": "incomplete",
+        "grade": "—",
+        "credits": max((_catalog_credits(a) for a in alts), default=0),
+        "term": "—",
+        "repeated": "",
+        "alternatives": alts,
+    }
+
+
+def build_degree_audit(degree_key: str, conc_key: str, student_history: dict) -> dict:
+    plan_root = DEGREE_PLANS.get(degree_key) or {}
+    concentrations = plan_root.get("concentrations") or {}
+    if conc_key not in concentrations:
+        conc_key = plan_root.get("default_concentration") or next(iter(concentrations.keys()), "systems_and_networks")
+    raw = concentrations[conc_key]
+    completed = student_history.get("completed_courses") or []
+    by_id = {r["id"]: r for r in completed if isinstance(r, dict) and r.get("id")}
+    completed_set = set(by_id.keys())
+    sched = normalize_degree_plan_for_schedule(plan_root, conc_key, raw)
+
+    sections: list = []
+    seen2: set = set()
+
+    block1 = []
+    for cid in plan_root.get("major_core") or []:
+        if isinstance(cid, str) and cid.strip():
+            block1.append(_audit_row_course(cid.strip(), by_id, completed_set))
+    for cid in plan_root.get("math_and_statistics") or []:
+        if isinstance(cid, str) and cid.strip():
+            block1.append(_audit_row_course(cid.strip(), by_id, completed_set))
+    if block1:
+        sections.append({"id": "program_core", "title": "Foundation of Computing", "rows": block1})
+
+    block2 = []
+    for item in raw.get("major_core") or []:
+        if isinstance(item, str) and item.strip():
+            cid = item.strip()
+            if cid not in seen2:
+                seen2.add(cid)
+                block2.append(_audit_row_course(cid, by_id, completed_set))
+        elif isinstance(item, list):
+            block2.append(_audit_row_choice(item, by_id, completed_set))
+    for field in ("advanced_statistics", "related_courses"):
+        for cid in raw.get(field) or []:
+            if isinstance(cid, str) and cid.strip():
+                cid = cid.strip()
+                if cid not in seen2:
+                    seen2.add(cid)
+                    block2.append(_audit_row_course(cid, by_id, completed_set))
+    for cid in raw.get("required_courses") or []:
+        if isinstance(cid, str) and cid.strip():
+            cid = cid.strip()
+            if cid not in seen2:
+                seen2.add(cid)
+                block2.append(_audit_row_course(cid, by_id, completed_set))
+    for cid in raw.get("required_options") or []:
+        if isinstance(cid, str) and cid.strip():
+            cid = cid.strip()
+            if cid not in seen2:
+                seen2.add(cid)
+                block2.append(_audit_row_course(cid, by_id, completed_set))
+    if block2:
+        sections.append(
+            {
+                "id": "concentration",
+                "title": f"Concentration — {sched['concentration_label']}",
+                "rows": block2,
+            }
+        )
+
+    block3 = []
+    for cid in sched["elective_pool_ids"]:
+        block3.append(_audit_row_course(cid, by_id, completed_set))
+    sub = (
+        f"Registration planning uses {REGISTRATION_TERM_LABEL} mock sections. "
+        f"Choose up to {sched['max_elective_picks']} course(s) from this pool (capstone options included where applicable)."
+    )
+    if block3 or sched["max_elective_picks"]:
+        sections.append({"id": "electives", "title": "Electives & capstone options", "subtitle": sub, "rows": block3})
+
+    cr_other = raw.get("electives_other_disciplines_credits")
+    if cr_other is None:
+        cr_other = plan_root.get("electives_other_disciplines_credits")
+    tech = raw.get("technical_electives_credits")
+    if cr_other:
+        try:
+            n = int(cr_other)
+        except (TypeError, ValueError):
+            n = 0
+        sections.append(
+            {
+                "id": "other_credits",
+                "title": "Other degree requirements",
+                "rows": [
+                    {
+                        "kind": "note",
+                        "course_id": "—",
+                        "title": f"Electives / breadth credits toward degree (not listed course-by-course): {cr_other} cr.",
+                        "status": "incomplete",
+                        "grade": "—",
+                        "credits": n,
+                        "term": "—",
+                        "repeated": "",
+                    }
+                ],
+            }
+        )
+    elif tech:
+        sections.append(
+            {
+                "id": "technical_electives",
+                "title": "Technical electives",
+                "rows": [
+                    {
+                        "kind": "note",
+                        "course_id": "—",
+                        "title": f"Additional technical elective credits: {tech} cr (select with advisor / catalog).",
+                        "status": "incomplete",
+                        "grade": "—",
+                        "credits": int(tech) if str(tech).isdigit() else 0,
+                        "term": "—",
+                        "repeated": "",
+                    }
+                ],
+            }
+        )
+
+    req_ids = sched["required_course_ids"]
+    credits_required = sum(_catalog_credits(c) for c in req_ids)
+    credits_applied = sum(_catalog_credits(c) for c in req_ids if c in completed_set)
+    badge = "COMPLETE" if credits_required > 0 and credits_applied >= credits_required else "INCOMPLETE"
+    major_title = f"{plan_root.get('name', 'Major')} — {sched['concentration_label']}"
+
+    return {
+        "major_title": major_title,
+        "status_badge": badge,
+        "credits_required": credits_required,
+        "credits_applied": credits_applied,
+        "catalog_year": plan_root.get("catalog_year", "2025-2026"),
+        "gpa": student_history.get("gpa"),
+        "footnote": "Core courses and Area of Concentration courses must be completed with a grade of B or better. This view uses NinerPath mock data.",
+        "footer_note": "NOTE: If the capstone is shared with the concentration, additional elective credits may be required per catalog.",
+        "registration_term_label": REGISTRATION_TERM_LABEL,
+        "sections": sections,
+    }
 
 
 def generate_schedule(
@@ -346,6 +786,7 @@ def generate_schedule(
     target_min_credits: int = SCHEDULE_TARGET_MIN_CREDITS,
     target_ideal_credits: int = SCHEDULE_TARGET_IDEAL_CREDITS,
     term_label: Optional[str] = None,
+    class_standing_override: Optional[str] = None,
 ):
     plan_root = DEGREE_PLANS.get(degree_key)
     if not plan_root:
@@ -354,33 +795,43 @@ def generate_schedule(
     if concentration not in concentrations:
         raise HTTPException(status_code=400, detail=f"Unknown concentration '{concentration}' for {degree_key}.")
 
-    plan = concentrations[concentration]
-    required_courses = [course_id for course_id in plan["required_courses"] if course_id not in completed_ids]
-    elective_pool = [course_id for course_id in plan["elective_pool"] if course_id not in completed_ids]
+    raw_conc = concentrations[concentration]
+    sched = normalize_degree_plan_for_schedule(plan_root, concentration, raw_conc)
+    req_ids = sched["required_course_ids"]
+    elec_ids = sched["elective_pool_ids"]
+    max_elective_picks = sched["max_elective_picks"]
+    concentration_label = sched["concentration_label"]
+    req_set = set(req_ids)
 
-    max_elective_picks = max(0, plan.get("elective_count", 0))
+    required_courses = [course_id for course_id in req_ids if course_id not in completed_ids]
+    elective_pool = [course_id for course_id in elec_ids if course_id not in completed_ids]
+
     completed_set = set(completed_ids)
     offerings_allowlist = OFFERINGS_BY_TERM_LABEL.get(term_label) if term_label else None
+    student_standing = effective_class_standing(completed_set, class_standing_override)
 
     def is_eligible(course):
         offered = course.get("offered_in", ["Fall", "Spring"])
-        prereqs = set(course.get("prereqs", []))
         if course["id"] in completed_set:
             return False
         if target_term not in offered and "Both" not in offered:
             return False
-        if not prereqs.issubset(completed_set):
+        if not prereqs_satisfied_tree(course.get("prereqs") or [], completed_set):
+            return False
+        if not standing_satisfies_min(student_standing, course.get("min_standing")):
             return False
         if offerings_allowlist is not None and course["id"] not in offerings_allowlist:
             return False
         return True
 
+    elec_set = set(elec_ids)
+
     def is_elective(course_id):
-        return course_id in plan["elective_pool"] and course_id not in plan["required_courses"]
+        return course_id in elec_set and course_id not in req_set
 
     def sort_key_tuple(course_id):
         return (
-            0 if course_id in plan["required_courses"] else 1,
+            0 if course_id in req_set else 1,
             -DEPENDENT_COUNTS.get(course_id, 0),
             parse_course_number(course_id),
         )
@@ -422,7 +873,7 @@ def generate_schedule(
             req_pick = _best_credit_subset(req_list, schedule_cap - used_e)
             bundle = elec_pick + req_pick
             total = sum(c["credits"] for c in bundle)
-            n_req = sum(1 for c in bundle if c["id"] in plan["required_courses"])
+            n_req = sum(1 for c in bundle if c["id"] in req_set)
             ideal = min(target_ideal_credits, schedule_cap)
             # Prefer any non-empty schedule over empty; then maximize credits toward schedule_cap;
             # then hug the ideal load on ties; then more required courses; then stable ids.
@@ -440,10 +891,10 @@ def generate_schedule(
 
     def order_for_display(c):
         cid = c["id"]
-        if cid in plan["required_courses"]:
-            return (0, plan["required_courses"].index(cid))
-        if cid in plan["elective_pool"]:
-            return (1, plan["elective_pool"].index(cid))
+        if cid in req_set:
+            return (0, req_ids.index(cid))
+        if cid in elec_set:
+            return (1, elec_ids.index(cid))
         return (2, cid)
 
     sk = lambda c: sort_key_tuple(c["id"])
@@ -484,9 +935,9 @@ def generate_schedule(
 
     return {
         "degree": plan_root["name"],
-        "catalog_year": plan_root["catalog_year"],
+        "catalog_year": plan_root.get("catalog_year", ""),
         "concentration": concentration,
-        "concentration_label": plan["label"],
+        "concentration_label": concentration_label,
         "target_term": target_term,
         "term_label": term_label,
         "max_credits": max_credits,
@@ -506,7 +957,6 @@ async def get_dashboard_data(
     email: str,
     degree: str = "bs_computer_science",
     concentration: str = "systems_and_networks",
-    term_label: Optional[str] = None,
     max_schedule_variants: int = 12,
 ):
     """Fetches history dynamically based on email, and saved schedules based on user_id."""
@@ -523,17 +973,19 @@ async def get_dashboard_data(
     if concentration not in plan_meta["concentrations"]:
         concentration = plan_meta.get("default_concentration", "systems_and_networks")
     
-    # Get saved upcoming schedule from Supabase (this uses the real user_id)
-    try:
-        if supabase:
-            response = supabase.table("saved_schedules").select("*").eq("user_id", user_id).execute()
-            upcoming_schedules = response.data
-        else:
-            upcoming_schedules = []
-    except Exception as e:
-        upcoming_schedules = []
+    # Saved schedules from Supabase (same threadpool + timeout so a slow DB never blocks the UI forever)
+    upcoming_schedules = []
+    if supabase:
+        try:
+            def _fetch_saved():
+                return supabase.table("saved_schedules").select("*").eq("user_id", user_id).execute()
 
-    eff_label, eff_season = resolve_schedule_term(term_label)
+            response = await asyncio.wait_for(asyncio.to_thread(_fetch_saved), timeout=8.0)
+            upcoming_schedules = response.data or []
+        except (asyncio.TimeoutError, Exception):
+            upcoming_schedules = []
+
+    eff_label, eff_season = registration_schedule_term()
     completed_ids = {course["id"] for course in student_history.get("completed_courses", [])}
     generated_schedule = generate_schedule(
         completed_ids=completed_ids,
@@ -542,6 +994,7 @@ async def get_dashboard_data(
         max_credits=15,
         degree_key=degree,
         term_label=eff_label,
+        class_standing_override=student_history.get("class_standing"),
     )
     cap = max(1, min(max_schedule_variants, 24))
     attach_schedule_variants(generated_schedule, eff_label, cap)
@@ -551,6 +1004,24 @@ async def get_dashboard_data(
         "upcoming": upcoming_schedules,
         "mock_generated_schedule": generated_schedule,
     }
+
+@app.get("/api/degree-audit")
+async def get_degree_audit(
+    email: str,
+    degree: str = "bs_computer_science",
+    concentration: str = "systems_and_networks",
+):
+    """Degree progress table data (completed vs remaining) for the landing audit view."""
+    history_data = load_json("student_history.json")
+    student_history = history_data.get(email, {"completed_courses": [], "gpa": 0.0})
+    if degree not in DEGREE_PLANS:
+        degree = "bs_computer_science"
+    plan_meta = DEGREE_PLANS[degree]
+    if concentration not in plan_meta["concentrations"]:
+        concentration = plan_meta.get("default_concentration", "systems_and_networks")
+    audit = build_degree_audit(degree, concentration, student_history)
+    return {"email": email, "degree": degree, "concentration": concentration, "audit": audit}
+
 
 @app.get("/api/degree-plans")
 async def get_degree_plans():
@@ -581,8 +1052,6 @@ async def auto_generate_schedule(
     degree: str = "bs_computer_science",
     concentration: str = "systems_and_networks",
     max_credits: int = 15,
-    term: Optional[str] = None,
-    term_label: Optional[str] = None,
     max_schedule_variants: int = 12,
 ):
     if max_credits <= 0:
@@ -598,7 +1067,7 @@ async def auto_generate_schedule(
     if concentration not in plan_meta["concentrations"]:
         concentration = plan_meta.get("default_concentration", "systems_and_networks")
 
-    eff_label, eff_season = resolve_schedule_term(term_label or term)
+    eff_label, eff_season = registration_schedule_term()
     schedule = generate_schedule(
         completed_ids=completed_ids,
         concentration=concentration,
@@ -606,6 +1075,7 @@ async def auto_generate_schedule(
         max_credits=max_credits,
         degree_key=degree,
         term_label=eff_label,
+        class_standing_override=student_history.get("class_standing"),
     )
     cap = max(1, min(max_schedule_variants, 24))
     attach_schedule_variants(schedule, eff_label, cap)

@@ -1,284 +1,111 @@
 {
   "bs_computer_science": {
     "name": "B.S. in Computer Science",
-    "catalog_year": "2025-2026",
-    "default_concentration": "systems_and_networks",
-
-    "added_requirements": {
-      "note": "Added to reach ~120 total credits. Original structure unchanged.",
-      "general_education": {
-        "writing": ["ENGL 1103", "ENGL 1104"],
-        "communication": ["COMM 1101"],
-        "mathematics_support": ["MATH 2164"],
-        "natural_sciences": ["PHYS 2101", "PHYS 2101L", "CHEM 1251", "CHEM 1251L"],
-        "social_sciences": ["POLS 1110", "ECON 1101"],
-        "humanities": ["HIST 1160", "PHIL 1100"],
-        "arts": ["ARTS 1110"],
-        "liberal_studies": ["LBST 2101", "LBST 2102", "LBST 2211"]
-      },
-      "free_electives": {
-        "count": 5,
-        "examples": [
-          "Any elective 1000-4000 level",
-          "Minor-related courses",
-          "ITSC 3681",
-          "Additional ITSC elective",
-          "Upper-level elective outside major"
-        ]
-      }
-    },
-
+    "major_core": [
+      "ITSC 1212", "ITSC 1213", "ITSC 1600", "ITSC 2175", "ITSC 2181", 
+      "ITSC 2214", "ITSC 3146", "ITSC 3155", "ITSC 3688"
+    ],
+    "math_and_statistics": ["MATH 2164", "STAT 2122"],
+    "electives_other_disciplines_credits": 15,
+    "capstone_options": ["ITSC 4155", "ITSC 4681"],
     "concentrations": {
-      "systems_and_networks": {
-        "label": "Systems and Networks",
-        "required_courses": [
-          "ITSC 1212",
-          "ITSC 1213",
-          "MATH 1241",
-          "MATH 1242",
-          "STAT 1220",
-          "ITSC 2175",
-          "ITSC 2214",
-          "ITSC 2181",
-          "ITSC 3146",
-          "ITSC 3155",
-          "ITSC 3160",
-          "ITSC 3688",
-          "ITSC 4114",
-          "ITSC 4155",
-          "ITSC 4090",
-          "ITSC 4190",
-          "ITSC 4420",
-          "ITSC 4231"
-        ],
-        "elective_pool": ["ITSC 4555", "ITSC 4365", "ITSC 4600", "ITSC 4681", "ITSC 4290"],
-        "elective_count": 2
-      },
-
-      "ai_robotics_and_gaming": {
-        "label": "AI, Robotics and Gaming",
-        "required_courses": [
-          "ITSC 1212",
-          "ITSC 1213",
-          "MATH 1241",
-          "MATH 1242",
-          "STAT 1220",
-          "ITSC 2175",
-          "ITSC 2214",
-          "ITSC 2181",
-          "ITSC 3146",
-          "ITSC 3155",
-          "ITSC 3160",
-          "ITSC 3688",
-          "ITSC 4114",
-          "ITSC 4155",
-          "ITSC 4090",
-          "ITSC 4190",
-          "ITSC 4600",
-          "ITSC 3050",
-          "ITSC 3260"
-        ],
-        "elective_pool": ["ITSC 3060", "ITSC 4260", "ITSC 4675", "ITSC 4681", "ITSC 4555"],
-        "elective_count": 2
-      },
-
       "bioinformatics": {
-        "label": "Bioinformatics (B.S.)",
-        "required_courses": [
-          "ITSC 1212",
-          "ITSC 1213",
-          "MATH 1241",
-          "MATH 1242",
-          "STAT 1220",
-          "ITSC 2175",
-          "ITSC 2214",
-          "ITSC 2181",
-          "ITSC 3146",
-          "ITSC 3155",
-          "ITSC 3160",
-          "ITSC 3688",
-          "ITSC 4114",
-          "ITSC 4155",
-          "ITSC 4090",
-          "ITSC 4190",
-          "BINF 2101",
-          "BINF 3101",
-          "ITSC 4681"
-        ],
-        "elective_pool": ["ITSC 4600", "ITSC 4675", "CHEM 1251", "BIOL 1110"],
-        "elective_count": 1
+        "required_courses": ["BINF 1101", "BINF 2111", "BINF 3101", "BINF 4600"],
+        "elective_subarea_1": ["BINF 3121", "BINF 4211"],
+        "elective_subarea_2": ["BINF 4171", "BINF 4191"],
+        "elective_subarea_3": ["BINF 3131", "BINF 3201"]
       },
-
-      "cybersecurity": {
-        "label": "Cybersecurity",
-        "required_courses": [
-          "ITSC 1212",
-          "ITSC 1213",
-          "MATH 1241",
-          "MATH 1242",
-          "STAT 1220",
-          "ITSC 2175",
-          "ITSC 2214",
-          "ITSC 2181",
-          "ITSC 3146",
-          "ITSC 3155",
-          "ITSC 3160",
-          "ITSC 3688",
-          "ITSC 4114",
-          "ITSC 4155",
-          "ITSC 4090",
-          "ITSC 4190",
-          "ITSC 4231",
-          "ITSC 4290"
-        ],
-        "elective_pool": ["ITSC 4280", "ITSC 4420", "ITSC 4555", "ITSC 4365"],
-        "elective_count": 2
+      "ai_robotics_and_gaming": {
+        "required_options": ["ITCS 3153", "ITCS 3156"],
+        "electives": {
+          "choose": 4,
+          "options": [
+            "ITCS 3120", "ITCS 3153", "ITCS 3156", "ITCS 4101", "ITCS 4114", 
+            "ITCS 4123", "ITCS 4124", "ITCS 4150", "ITCS 4151", "ITCS 4152", 
+            "ITCS 4230", "ITCS 4231", "ITCS 4236"
+          ]
+        },
+        "technical_electives_credits": 6
       },
-
       "data_science": {
-        "label": "Data Science",
-        "required_courses": [
-          "ITSC 1212",
-          "ITSC 1213",
-          "MATH 1241",
-          "MATH 1242",
-          "STAT 1220",
-          "ITSC 2175",
-          "ITSC 2214",
-          "ITSC 2181",
-          "ITSC 3146",
-          "ITSC 3155",
-          "ITSC 3160",
-          "ITSC 3688",
-          "ITSC 4114",
-          "ITSC 4155",
-          "ITSC 4090",
-          "ITSC 4190",
-          "ITSC 4600",
-          "ITSC 4675",
-          "ITSC 4681"
-        ],
-        "elective_pool": ["ITSC 4555", "ITSC 4365", "ITSC 4420", "ITSC 4231"],
-        "elective_count": 2
+        "required_courses": ["ITCS 3162", "ITSC 3160"],
+        "electives": {
+          "choose": 3,
+          "options": [
+            "ITCS 3156", "ITCS 3190", "ITCS 3216", "ITCS 4114", 
+            "ITCS 4121", "ITCS 4122", "ITCS 4152", "ITIS 4310"
+          ]
+        },
+        "technical_electives_credits": 6
       },
-
-      "web_mobile_and_software_engineering": {
-        "label": "Web/Mobile Development and Software Engineering",
+      "systems_and_networks": {
+        "electives": {
+          "choose": 5,
+          "options": [
+            "ITCS 3143", "ITCS 3156", "ITCS 3166", "ITCS 3190", "ITCS 4102", 
+            "ITCS 4141", "ITIS 3200", "ITIS 3246", "ITIS 4166", "ITSC 3160"
+          ]
+        },
+        "technical_electives_credits": 6
+      },
+      "cybersecurity": {
         "required_courses": [
-          "ITSC 1212",
-          "ITSC 1213",
-          "MATH 1241",
-          "MATH 1242",
-          "STAT 1220",
-          "ITSC 2175",
-          "ITSC 2214",
-          "ITSC 2181",
-          "ITSC 3146",
-          "ITSC 3155",
-          "ITSC 3160",
-          "ITSC 3688",
-          "ITSC 4114",
-          "ITSC 4155",
-          "ITSC 4090",
-          "ITSC 4190",
-          "ITSC 4555",
-          "ITSC 3290",
-          "ITSC 4365"
+          "ITIS 3135", "ITIS 3200", "ITIS 3246", "ITIS 4221", "ITIS 4260", "ITSC 3160"
         ],
-        "elective_pool": ["ITSC 4420", "ITSC 4231", "ITSC 4600"],
-        "elective_count": 1
+        "required_security_elective": ["ITIS 4250", "ITIS 4214", "ITIS 4261"],
+        "technical_electives_credits": 3
+      },
+      "web_mobile_and_software_engineering": {
+        "required_courses": ["ITIS 3135", "ITIS 3310", "ITIS 4221", "ITSC 3160"],
+        "electives": {
+          "choose": 3,
+          "options": [
+            "ITCS 3112", "ITIS 3130", "ITIS 4350", "ITIS 3300", 
+            "ITIS 3320", "ITIS 4166", "ITIS 4180"
+          ]
+        },
+        "technical_electives_credits": 6
       }
     }
   },
-
   "ba_computer_science": {
     "name": "B.A. in Computer Science",
-    "catalog_year": "2025-2026",
-    "default_concentration": "information_technology",
-
-    "added_requirements": {
-      "general_education": {
-        "writing": ["ENGL 1103", "ENGL 1104"],
-        "communication": ["COMM 1101"],
-        "natural_sciences": ["CHEM 1251", "CHEM 1251L"],
-        "social_sciences": ["POLS 1110", "ECON 1101"],
-        "humanities": ["HIST 1160", "PHIL 1100"],
-        "arts": ["ARTS 1110"],
-        "liberal_studies": ["LBST 2101", "LBST 2102", "LBST 2211"]
-      },
-      "free_electives": {
-        "count": 6,
-        "examples": [
-          "Any electives",
-          "Minor courses",
-          "Upper-level electives",
-          "Internship credit"
-        ]
-      }
-    },
-
+    "capstone_options": ["ITIS 4390", "ITSC 4681"],
     "concentrations": {
-      "information_technology": {
-        "label": "Information Technology",
-        "required_courses": [
-          "ITSC 1212",
-          "ITSC 1213",
-          "ITSC 1600",
-          "ITSC 2175",
-          "ITSC 2214",
-          "ITSC 2181",
-          "ITSC 3155",
-          "ITSC 3160",
-          "ITSC 3146",
-          "ITSC 3688",
-          "ITSC 4231",
-          "MATH 1241",
-          "STAT 1220"
-        ],
-        "elective_pool": ["ITSC 4555", "ITSC 3290", "ITSC 4420"],
-        "elective_count": 3
-      },
-
-      "human_computer_interaction": {
-        "label": "Human-Computer Interaction",
-        "required_courses": [
-          "ITSC 1212",
-          "ITSC 1213",
-          "ITSC 1600",
-          "ITSC 2175",
-          "ITSC 2214",
-          "ITSC 2181",
-          "ITSC 3123",
-          "ITSC 3155",
-          "ITSC 3160",
-          "ITSC 4555",
-          "ITSC 3688",
-          "MATH 1241",
-          "STAT 1220"
-        ],
-        "elective_pool": ["ITSC 3290", "ITSC 4365", "ITSC 3146"],
-        "elective_count": 3
-      },
-
       "bioinformatics": {
-        "label": "Bioinformatics (B.A.)",
-        "required_courses": [
-          "ITSC 1212",
-          "ITSC 1213",
-          "ITSC 1600",
-          "ITSC 2175",
-          "ITSC 2214",
-          "MATH 1241",
-          "MATH 1242",
-          "STAT 1220",
-          "BINF 2101",
-          "BINF 3101",
-          "ITSC 4681",
-          "ITSC 3688",
-          "CHEM 1251"
+        "major_core": [
+          "ITSC 1212", "ITSC 1213", "ITSC 1600", "ITSC 2175", "ITSC 2214", "ITSC 3688"
         ],
-        "elective_pool": ["ITSC 3160", "ITSC 3155", "BIOL 1110", "ITSC 4600"],
-        "elective_count": 2
+        "advanced_statistics": ["BINF 3121"],
+        "related_courses": ["BIOL 2120", "BIOL 2130", "CHEM 1251", "CHEM 1251L", "CHEM 1252", "CHEM 1252L"],
+        "required_courses": ["BINF 1101", "BINF 2111", "BINF 3101", "BINF 4600", "BIOL 3111", "BIOL 3166"],
+        "elective_subarea_1": ["BINF 4211"],
+        "elective_subarea_2": ["BINF 4171", "BINF 4191"],
+        "elective_subarea_3": ["BINF 3131", "BINF 3201"]
+      },
+      "human_computer_interaction": {
+        "major_core": [
+          "ITSC 1212", "ITSC 1213", ["ITSC 1600", "ITSC 2600"], 
+          ["ITSC 2175", "MATH 2165"], "ITSC 2214", "ITSC 3688"
+        ],
+        "advanced_statistics": ["STAT 2223"],
+        "electives_other_disciplines_credits": 15,
+        "required_courses": ["ITIS 3130", "ITIS 3135", "ITIS 3140", "ITIS 4350"],
+        "electives": {
+          "choose": 2,
+          "options": ["ITIS 3216", "ITIS 4214", "ITIS 4353", "ITIS 4355", "ITIS 4358", "ITIS 4360"]
+        },
+        "technical_electives_credits": 9
+      },
+      "information_technology": {
+        "major_core": [
+          "ITSC 1212", "ITSC 1213", ["ITSC 1600", "ITSC 2600"], 
+          ["ITSC 2175", "MATH 2165"], "ITSC 2214", "ITSC 3688"
+        ],
+        "advanced_statistics": ["STAT 2223"],
+        "electives_other_disciplines_credits": 15,
+        "required_courses": ["ITIS 3130", "ITIS 3135", "ITIS 3200", "ITIS 3300", "ITSC 3160"],
+        "technical_electives_credits": 18
       }
     }
   }

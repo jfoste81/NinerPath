@@ -1,27 +1,40 @@
 [
   {
-    "category": "Writing / Composition",
-    "courses": ["ENGL 1101", "ENGL 1102", "UWRT 1103", "UWRT 1104"],
-    "required_credits": 6
+    "category": "Communication Competency",
+    "required_credits": 3,
+    "courses": ["WRDS 1103"]
   },
   {
-    "category": "Critical Thinking & Communication (LBST)",
-    "courses": ["LBST 2301"],
-    "required_credits": 3
+    "category": "Quantitative/Data Competency",
+    "required_credits": 3,
+    "courses": ["MATH 1241", "MATH 1242", "STAT 1222"]
   },
   {
-    "category": "Natural Science (mock elective bucket)",
-    "courses": ["PHYS 1101", "CHEM 1251", "BIOL 1110"],
-    "required_credits": 4
+    "category": "Critical Thinking Competency",
+    "required_credits": 3,
+    "courses": ["CTCM 2530"]
   },
   {
-    "category": "Mathematics / Statistics",
-    "courses": ["MATH 1241", "MATH 1242", "STAT 1220"],
-    "required_credits": 9
+    "category": "Global and Local Themes",
+    "required_credits": 9,
+    "courses": [
+      "ANTH 1501", "ECON 1501", "POLS 1501", 
+      "FILM 1502", "LANG 1502", "PHIL 1502", 
+      "ANTH 1511", "MUSC 1512", "HAHS 1511"
+    ]
   },
   {
-    "category": "Social Science (mock)",
-    "courses": ["HIST 1160", "ECON 2101"],
-    "required_credits": 3
+    "category": "Natural Sciences",
+    "required_credits": 7,
+    "courses": [
+      "BIOL 1110", "BIOL 1110L", "BINF 1101", 
+      "CHEM 1200", "CHEM 1200L", "PSYC 1101", "PSYC 1101L", 
+      "PHYS 1101", "PHYS 1101L", "BIOL 2130", "CHEM 1252", "CHEM 1252L"
+    ]
+  },
+  {
+    "category": "Foundations of American Democracy",
+    "required_credits": 3,
+    "courses": ["POLS 1575"]
   }
 ]
