@@ -278,6 +278,37 @@ export default function DegreeHomePage({ session, onSignOut }) {
 
   const scheduleHref = `/schedule?degree=${encodeURIComponent(selectedDegree)}&concentration=${encodeURIComponent(selectedConcentration)}`;
 
+  const downloadScheduleIcs = (scheduleId, termLabel) => {
+    if (!session?.user?.id || !scheduleId) return;
+    const params = new URLSearchParams({
+      user_id: session.user.id,
+      email: session.user.email || '',
+    });
+    const url = `${API_BASE}/api/schedules/${encodeURIComponent(scheduleId)}/export.ics?${params.toString()}`;
+    const safeName = (termLabel || 'schedule').replace(/[^\w.-]+/g, '-').toLowerCase() || 'schedule';
+    fetch(url)
+      .then(async (res) => {
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(typeof err?.detail === 'string' ? err.detail : res.statusText || 'Export failed');
+        }
+        return res.blob();
+      })
+      .then((blob) => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `ninerpath-${safeName}.ics`;
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(a.href);
+      })
+      .catch((err) => {
+        window.alert(err.message || 'Could not download calendar file.');
+      });
+  };
+
   return (
     <div className="bg-slate-100 min-h-screen font-sans text-gray-900">
       <nav className="bg-teal-900 text-white px-4 py-3 shadow-lg flex flex-wrap justify-between items-center gap-3 sticky top-0 z-10">
@@ -415,6 +446,20 @@ export default function DegreeHomePage({ session, onSignOut }) {
                       </p>
                       {sch.created_at && (
                         <p className="text-xs text-gray-500 mt-1">{new Date(sch.created_at).toLocaleString()}</p>
+                      )}
+                      {session?.user?.id && sch.id && (
+                        <div className="mt-3 pt-2 border-t border-teal-100 space-y-1.5">
+                          <button
+                            type="button"
+                            onClick={() => downloadScheduleIcs(sch.id, sch.term)}
+                            className="w-full rounded-lg bg-white border border-teal-300 px-3 py-2 text-xs font-semibold text-teal-900 hover:bg-teal-100/80 shadow-sm"
+                          >
+                            Download .ics (Google Calendar)
+                          </button>
+                          <p className="text-[10px] leading-snug text-gray-600">
+                            In Google Calendar: Settings → Import &amp; Export → Import, then upload this file.
+                          </p>
+                        </div>
                       )}
                     </li>
                   ))}

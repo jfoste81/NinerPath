@@ -1,6 +1,7 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date, timedelta
 from fastapi import FastAPI, HTTPException, Body
+from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
 from dotenv import load_dotenv
@@ -324,6 +325,104 @@ def section_time_slots(section: dict) -> list:
     return [(d, start_m, end_m) for d in days]
 
 
+def _parse_flexible_time_to_minutes(s: str) -> int:
+    """Parse '8:00 AM', '10:50 PM', or '14:30' into minutes from midnight; -1 if unusable."""
+    s = (s or "").strip()
+    if not s:
+        return -1
+    if re.search(r"\b(AM|PM)\b", s, re.I):
+        return parse_clock_to_minutes(s)
+    m = re.match(r"^(\d{1,2}):(\d{2})(?::(\d{2}))?$", s)
+    if not m:
+        return -1
+    hour = int(m.group(1)) % 24
+    minute = int(m.group(2))
+    return hour * 60 + min(max(minute, 0), 59)
+
+
+_WEEKDAY_INDEX_TO_LETTER = {1: "M", 2: "T", 3: "W", 4: "R", 5: "F", 6: "S"}
+
+
+def _weekday_indices_to_day_string(indices: list) -> str:
+    return "".join(_WEEKDAY_INDEX_TO_LETTER[i] for i in sorted(indices) if i in _WEEKDAY_INDEX_TO_LETTER)
+
+
+def _minutes_to_ampm(m: int) -> str:
+    m = max(0, m)
+    h24, mi = divmod(m, 60)
+    if h24 == 0:
+        h, ap = 12, "AM"
+    elif 1 <= h24 <= 11:
+        h, ap = h24, "AM"
+    elif h24 == 12:
+        h, ap = 12, "PM"
+    else:
+        h, ap = h24 - 12, "PM"
+    return f"{h}:{mi:02d} {ap}"
+
+
+def normalize_blocked_time_windows(raw: Any) -> list:
+    """
+    Student preference rows: { "days": "MWF" | "TR", "start": "8:00 AM"|"08:00", "end": "12:00 PM" }.
+    Returns JSON-serializable dicts: weekdays (sorted indices 1–6), start_minutes, end_minutes.
+    """
+    if not raw or not isinstance(raw, list):
+        return []
+    out: list = []
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        days_s = str(item.get("days") or "").strip().upper()
+        idxs = sorted(set(expand_meeting_days(days_s)))
+        if not idxs:
+            continue
+        sm = _parse_flexible_time_to_minutes(str(item.get("start") or ""))
+        em = _parse_flexible_time_to_minutes(str(item.get("end") or ""))
+        if sm < 0 or em < 0:
+            continue
+        if em <= sm:
+            sm, em = em, sm
+            if em <= sm:
+                continue
+        out.append({"weekdays": idxs, "start_minutes": sm, "end_minutes": em})
+    return out
+
+
+def summarize_blocked_time_windows(norm: list) -> list:
+    """Human-readable summary for API clients."""
+    rows = []
+    for blk in norm:
+        if not isinstance(blk, dict):
+            continue
+        w = blk.get("weekdays") or []
+        if not isinstance(w, list):
+            continue
+        rows.append(
+            {
+                "days": _weekday_indices_to_day_string([int(x) for x in w]),
+                "start": _minutes_to_ampm(int(blk.get("start_minutes", 0))),
+                "end": _minutes_to_ampm(int(blk.get("end_minutes", 0))),
+                "start_minutes": int(blk.get("start_minutes", 0)),
+                "end_minutes": int(blk.get("end_minutes", 0)),
+            }
+        )
+    return rows
+
+
+def section_hits_blocked_times(section: dict, blocked_windows: Optional[list]) -> bool:
+    if not blocked_windows:
+        return False
+    for day, sm, em in section_time_slots(section):
+        for blk in blocked_windows:
+            if day not in (blk.get("weekdays") or []):
+                continue
+            bsm = int(blk.get("start_minutes", 0))
+            bem = int(blk.get("end_minutes", 0))
+            if sm < bem and bsm < em:
+                return True
+    return False
+
+
 def slots_overlap(a, b) -> bool:
     da, sa, ea = a
     db, sb, eb = b
@@ -367,6 +466,7 @@ def build_schedule_variants(
     recommended_course_ids_ordered: list,
     term_label: Optional[str],
     max_variants: int = 10,
+    blocked_windows: Optional[list] = None,
 ) -> dict:
     """
     Non-conflicting section combinations using mock section rows (fall_2026_offerings.json).
@@ -422,6 +522,8 @@ def build_schedule_variants(
         for sec in by_course[cid]:
             if bundle_conflicts_with(picked, sec):
                 continue
+            if section_hits_blocked_times(sec, blocked_windows):
+                continue
             dfs(i + 1, picked + [sec])
 
     dfs(0, [])
@@ -432,13 +534,17 @@ def build_schedule_variants(
     }
 
 
-def bundle_has_feasible_meeting_layout(course_ids_ordered: list, term_label: Optional[str]) -> bool:
+def bundle_has_feasible_meeting_layout(
+    course_ids_ordered: list,
+    term_label: Optional[str],
+    blocked_windows: Optional[list] = None,
+) -> bool:
     """
     True when mock offerings admit at least one pairwise non-overlapping section assignment for
     courses that have section rows. If every course is omitted from the calendar (no mock sections),
     the bundle is still accepted. When no term catalog is available, do not block generation.
     """
-    built = build_schedule_variants(course_ids_ordered, term_label, max_variants=1)
+    built = build_schedule_variants(course_ids_ordered, term_label, max_variants=1, blocked_windows=blocked_windows)
     if built["variants"]:
         return True
     if not _resolve_calendar_sections_term(term_label):
@@ -447,10 +553,16 @@ def bundle_has_feasible_meeting_layout(course_ids_ordered: list, term_label: Opt
     return all(cid in omitted_set for cid in course_ids_ordered)
 
 
-def attach_schedule_variants(schedule_dict: dict, term_label: Optional[str], max_variants: int = 10):
+def attach_schedule_variants(
+    schedule_dict: dict,
+    term_label: Optional[str],
+    max_variants: int = 10,
+    blocked_windows: Optional[list] = None,
+):
     courses = schedule_dict.get("recommended_courses") or []
     order = [c["id"] for c in courses]
-    built = build_schedule_variants(order, term_label, max_variants)
+    bw = blocked_windows if blocked_windows is not None else schedule_dict.get("blocked_time_windows_normalized")
+    built = build_schedule_variants(order, term_label, max_variants, blocked_windows=bw)
     schedule_dict["schedule_variants"] = built["variants"]
     schedule_dict["schedule_calendar_sections_term"] = built["sections_term_label"]
     schedule_dict["schedule_calendar_omitted_courses"] = built["omitted_course_ids"]
@@ -460,11 +572,12 @@ def attach_schedule_variants(schedule_dict: dict, term_label: Optional[str], max
 def attach_variants_to_combination_options(schedule_dict: dict, term_label: Optional[str], max_variants: int = 10) -> None:
     """Build calendar variants per class combination; mirror first combo onto the root schedule for legacy fields."""
     opts = schedule_dict.get("combination_options") or []
+    bw = schedule_dict.get("blocked_time_windows_normalized")
     if not opts:
-        attach_schedule_variants(schedule_dict, term_label, max_variants)
+        attach_schedule_variants(schedule_dict, term_label, max_variants, blocked_windows=bw)
         return
     for opt in opts:
-        attach_schedule_variants(opt, term_label, max_variants)
+        attach_schedule_variants(opt, term_label, max_variants, blocked_windows=bw)
     first = opts[0]
     schedule_dict["schedule_variants"] = list(first.get("schedule_variants") or [])
     schedule_dict["schedule_calendar_sections_term"] = first.get("schedule_calendar_sections_term")
@@ -623,6 +736,155 @@ def _dedupe_saved_rows_latest_per_term(rows: list) -> list:
     return out
 
 
+ICAL_BYDAY_FROM_DAY_INDEX = {1: "MO", 2: "TU", 3: "WE", 4: "TH", 5: "FR", 6: "SA"}
+_DAY_INDEX_TO_PYTHON_WEEKDAY = {1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5}
+
+
+def _ical_text_escape(s: str) -> str:
+    if not s:
+        return ""
+    return (
+        str(s)
+        .replace("\\", "\\\\")
+        .replace(";", "\\;")
+        .replace(",", "\\,")
+        .replace("\n", "\\n")
+        .replace("\r", "")
+    )
+
+
+def _ics_fold_property(name: str, value: str) -> str:
+    line = f"{name}:{value}"
+    if len(line) <= 75:
+        return line
+    parts = []
+    rest = line
+    first = True
+    while rest:
+        take = 73 if first else 74
+        parts.append(rest[:take])
+        rest = rest[take:]
+        first = False
+    return "\r\n ".join(parts)
+
+
+def _export_term_first_class_date(term_label: Optional[str]) -> date:
+    tl = (term_label or "").lower()
+    if "spring" in tl and "2026" in tl:
+        return date(2026, 1, 13)
+    if "fall" in tl and "2026" in tl:
+        return date(2026, 8, 24)
+    return date(2026, 8, 24)
+
+
+def _export_term_rrule_until(term_label: Optional[str]) -> str:
+    """UNTIL in same floating local form as DTSTART (no Z). Approximate last class week."""
+    tl = (term_label or "").lower()
+    if "spring" in tl and "2026" in tl:
+        return "20260501T235900"
+    return "20261205T235900"
+
+
+def _first_calendar_date_on_or_after(term_start: date, day_index: int) -> date:
+    wd = _DAY_INDEX_TO_PYTHON_WEEKDAY.get(day_index)
+    if wd is None:
+        return term_start
+    d = term_start
+    while d.weekday() != wd:
+        d += timedelta(days=1)
+    return d
+
+
+def _fmt_ics_local_datetime(d: date, minutes_from_midnight: int) -> str:
+    m = max(0, int(minutes_from_midnight))
+    hh, mm = divmod(m, 60)
+    return f"{d.year:04d}{d.month:02d}{d.day:02d}T{hh:02d}{mm:02d}00"
+
+
+def build_schedule_ics_document(
+    enriched_sections: list,
+    term_label: Optional[str],
+    calendar_title: str = "NinerPath schedule",
+) -> str:
+    """
+    Build iCalendar text from enriched section rows (calendar_blocks or raw days/time).
+    Uses illustrative semester dates for Fall 2026 mock data; adjust in calendar after import if needed.
+    """
+    term_start = _export_term_first_class_date(term_label)
+    until_part = _export_term_rrule_until(term_label)
+    dtstamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    out_lines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//UNC Charlotte//NinerPath//EN",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH",
+        _ics_fold_property("X-WR-CALNAME", _ical_text_escape(calendar_title)),
+    ]
+    for sec in enriched_sections:
+        if not isinstance(sec, dict):
+            continue
+        cid = str(sec.get("course_id") or "").strip()
+        cat = COURSE_BY_ID.get(cid) or {}
+        title = str(sec.get("title") or cat.get("name") or cid)
+        loc = str(sec.get("location") or "")
+        instr = str(sec.get("instructor") or "")
+        blocks = sec.get("calendar_blocks")
+        if not blocks:
+            blocks = []
+            for wd, sm, em in section_time_slots(sec):
+                blocks.append({"weekday": wd, "start_minutes": sm, "end_minutes": em})
+        if not blocks:
+            continue
+        for blk in blocks:
+            if not isinstance(blk, dict):
+                continue
+            di = int(blk.get("weekday", 0))
+            sm = int(blk.get("start_minutes", 0))
+            em = int(blk.get("end_minutes", 0))
+            if em <= sm:
+                continue
+            byday = ICAL_BYDAY_FROM_DAY_INDEX.get(di)
+            if not byday:
+                continue
+            first_d = _first_calendar_date_on_or_after(term_start, di)
+            dtstart = _fmt_ics_local_datetime(first_d, sm)
+            dtend = _fmt_ics_local_datetime(first_d, em)
+            summary = _ical_text_escape(f"{cid} — {title}")
+            desc_parts = [f"Course: {cid}", f"Title: {title}"]
+            if instr:
+                desc_parts.append(f"Instructor: {instr}")
+            desc_parts.append("Imported from NinerPath (mock section times).")
+            desc = _ical_text_escape("\n".join(desc_parts))
+            loc_esc = _ical_text_escape(loc) if loc else ""
+            uid = f"{uuid.uuid4()}@ninerpath.local"
+            out_lines.append("BEGIN:VEVENT")
+            out_lines.append(_ics_fold_property("UID", uid))
+            out_lines.append(_ics_fold_property("DTSTAMP", dtstamp))
+            out_lines.append(_ics_fold_property("DTSTART", dtstart))
+            out_lines.append(_ics_fold_property("DTEND", dtend))
+            out_lines.append(_ics_fold_property("RRULE", f"FREQ=WEEKLY;BYDAY={byday};UNTIL={until_part}"))
+            out_lines.append(_ics_fold_property("SUMMARY", summary))
+            if loc_esc:
+                out_lines.append(_ics_fold_property("LOCATION", loc_esc))
+            out_lines.append(_ics_fold_property("DESCRIPTION", desc))
+            out_lines.append("END:VEVENT")
+    out_lines.append("END:VCALENDAR")
+    return "\r\n".join(out_lines) + "\r\n"
+
+
+async def _find_saved_schedule_row(user_id: str, schedule_id: str) -> Optional[dict]:
+    uid = (user_id or "").strip()
+    sid = str(schedule_id or "").strip()
+    if not uid or not sid:
+        return None
+    rows = await _list_saved_schedules_async(uid)
+    for r in rows:
+        if str(r.get("id") or "") == sid:
+            return r
+    return None
+
+
 def compute_dependent_counts(course_list):
     dependent_counts = {course["id"]: 0 for course in course_list}
     for course in course_list:
@@ -730,6 +992,22 @@ def _strict_prereq_filter(course_dicts: list, completed_ids: set) -> list:
         prereqs = meta.get("prereqs") or []
         if prereqs_satisfied_tree(prereqs, done):
             out.append(c)
+    return out
+
+
+def _schedule_bundle_prereq_filter(course_dicts: list, completed_ids: set) -> list:
+    """
+    Same-term schedule: keep a course if its prereqs are met by completed history and/or courses
+    listed earlier in this same recommendation (forward pass; list order must respect deps).
+    """
+    allow = set(completed_ids)
+    out: list = []
+    for c in course_dicts:
+        meta = COURSE_BY_ID.get(c["id"], c)
+        pr = meta.get("prereqs") or []
+        if prereqs_satisfied_tree(pr, allow):
+            out.append(c)
+            allow.add(c["id"])
     return out
 
 
@@ -1433,7 +1711,11 @@ def generate_schedule(
     term_label: Optional[str] = None,
     class_standing_override: Optional[str] = None,
     max_combinations: int = 3,
+    schedule_preferences: Optional[dict] = None,
 ):
+    sprefs = schedule_preferences if isinstance(schedule_preferences, dict) else None
+    blocked_norm = normalize_blocked_time_windows((sprefs or {}).get("blocked_time_windows"))
+
     plan_root = _effective_plan_root(degree_key)
     if not plan_root or not plan_root.get("concentrations"):
         raise HTTPException(status_code=400, detail=f"Unknown degree plan '{degree_key}'.")
@@ -1504,10 +1786,39 @@ def generate_schedule(
         seen_e.add(course_id)
         elec_list.append(dict(course))
 
+    # Include degree gen-ed options in the same search space as concentration electives (capped).
+    _ge_pool_cap = 10
+    _ge_added = 0
+    for cid in _gen_ed_deficit_catalog_course_ids(completed_set):
+        if _ge_added >= _ge_pool_cap:
+            break
+        if cid in seen_e or cid in req_set:
+            continue
+        course = COURSE_BY_ID.get(cid)
+        if not course or not is_eligible(course):
+            continue
+        seen_e.add(cid)
+        elec_list.append(dict(course))
+        _ge_added += 1
+
+    gen_ed_suggestions: list = []
+    for cid in _gen_ed_deficit_catalog_course_ids(completed_set):
+        course = COURSE_BY_ID.get(cid)
+        if not course or not is_eligible(course):
+            continue
+        gen_ed_suggestions.append(
+            {
+                "id": course["id"],
+                "name": course.get("name", cid),
+                "credits": _catalog_credits(cid),
+            }
+        )
+
     schedule_cap = max(1, max_credits)
     max_combo = max(1, min(int(max_combinations or 3), 3))
 
-    max_e = min(max_elective_picks, len(elec_list))
+    _extra_combo_slots = min(4, max(0, _ge_added))
+    max_e = min(max_elective_picks + _extra_combo_slots, len(elec_list), 8)
     raw_candidates: list = []
     for r in range(max_e + 1):
         for idxs in combinations(range(len(elec_list)), r):
@@ -1572,7 +1883,8 @@ def generate_schedule(
                 selected = sorted(g2, key=order_for_display)
                 total_credits = sum(c["credits"] for c in selected)
         sel_ids = {c["id"] for c in selected}
-        for cid in sorted(_gen_ed_deficit_catalog_course_ids(completed_set), key=sort_key_tuple):
+        # Category order in gen_eds.json (Communication → …) so foundational gen eds fill first.
+        for cid in _gen_ed_deficit_catalog_course_ids(completed_set):
             if cid in sel_ids:
                 continue
             course = COURSE_BY_ID.get(cid)
@@ -1584,7 +1896,7 @@ def generate_schedule(
             selected.append(dc)
             sel_ids.add(cid)
             total_credits += dc["credits"]
-        selected = _strict_prereq_filter(selected, completed_set)
+        selected = _schedule_bundle_prereq_filter(selected, completed_set)
         total_credits = sum(c["credits"] for c in selected)
         selected = sorted(selected, key=order_for_display)
         sel_ids = {c["id"] for c in selected}
@@ -1606,8 +1918,8 @@ def generate_schedule(
         if key in seen_sets:
             continue
         part = finalize_from_base_bundle([dict(c) for c in bundle])
-        ids_order = [c["id"] for c in part["recommended_courses"]]
-        if not bundle_has_feasible_meeting_layout(ids_order, term_label):
+        core_ids = [c["id"] for c in bundle]
+        if not bundle_has_feasible_meeting_layout(core_ids, term_label, blocked_norm):
             continue
         seen_sets.add(key)
         deduped_finalized.append(part)
@@ -1618,8 +1930,8 @@ def generate_schedule(
         g = greedy_fallback_pack()
         if g and sum(c["credits"] for c in g) > 0:
             part = finalize_from_base_bundle([dict(c) for c in g])
-            ids_order = [c["id"] for c in part["recommended_courses"]]
-            if bundle_has_feasible_meeting_layout(ids_order, term_label):
+            core_ids = [c["id"] for c in g]
+            if bundle_has_feasible_meeting_layout(core_ids, term_label, blocked_norm):
                 deduped_finalized = [part]
 
     combination_options: list = []
@@ -1641,6 +1953,10 @@ def generate_schedule(
         "target_min_credits": target_min_credits,
         "target_ideal_credits": target_ideal_credits,
         "combination_options": combination_options,
+        "gen_ed_suggestions": gen_ed_suggestions,
+        "schedule_preferences": sprefs or {},
+        "blocked_time_windows_applied": summarize_blocked_time_windows(blocked_norm),
+        "blocked_time_windows_normalized": blocked_norm,
     }
     if not combination_options:
         return {
@@ -1687,6 +2003,7 @@ async def get_dashboard_data(
 
     eff_label, eff_season = registration_schedule_term()
     completed_ids = {course["id"] for course in student_history.get("completed_courses", [])}
+    sp = student_history.get("schedule_preferences") if isinstance(student_history.get("schedule_preferences"), dict) else {}
     generated_schedule = generate_schedule(
         completed_ids=completed_ids,
         concentration=concentration,
@@ -1695,6 +2012,7 @@ async def get_dashboard_data(
         degree_key=degree,
         term_label=eff_label,
         class_standing_override=student_history.get("class_standing"),
+        schedule_preferences=sp,
     )
     cap = max(1, min(max_schedule_variants, 24))
     attach_variants_to_combination_options(generated_schedule, eff_label, cap)
@@ -1727,6 +2045,51 @@ async def get_degree_audit(
         planned = _latest_saved_course_ids_for_term(rows, REGISTRATION_TERM_LABEL)
     audit = build_degree_audit(degree, concentration, student_history, planned_ids=planned)
     return {"email": email, "degree": degree, "concentration": concentration, "audit": audit}
+
+
+@app.get("/api/student/schedule-preferences")
+async def get_schedule_preferences(email: str):
+    """Load saved schedule preferences (e.g. blocked meeting times) for a student email."""
+    em = str(email or "").strip()
+    if not em:
+        raise HTTPException(status_code=400, detail="email is required.")
+    history_data = load_json("student_history.json")
+    row = history_data.get(em)
+    sp = {}
+    if isinstance(row, dict):
+        sp = row.get("schedule_preferences") or {}
+    if not isinstance(sp, dict):
+        sp = {}
+    return {"email": em, "schedule_preferences": sp}
+
+
+@app.post("/api/student/schedule-preferences")
+async def save_schedule_preferences(payload: dict = Body(...)):
+    """Persist schedule preferences into student_history.json (mock/local store)."""
+    email = str(payload.get("email") or "").strip()
+    if not email:
+        raise HTTPException(status_code=400, detail="email is required.")
+    windows = payload.get("blocked_time_windows")
+    if windows is not None and not isinstance(windows, list):
+        raise HTTPException(status_code=400, detail="blocked_time_windows must be a list or omitted.")
+    path = os.path.join("data", "student_history.json")
+    history_data = load_json("student_history.json")
+    if not isinstance(history_data, dict):
+        history_data = {}
+    row = history_data.get(email)
+    if not isinstance(row, dict):
+        row = {"completed_courses": []}
+    sp = row.get("schedule_preferences") if isinstance(row.get("schedule_preferences"), dict) else {}
+    if windows is not None:
+        if windows:
+            sp = {**sp, "blocked_time_windows": windows}
+        else:
+            sp = {k: v for k, v in sp.items() if k != "blocked_time_windows"}
+    row["schedule_preferences"] = sp
+    history_data[email] = row
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(history_data, f, indent=2)
+    return {"ok": True, "email": email, "schedule_preferences": sp}
 
 
 @app.post("/api/schedules/save")
@@ -1781,6 +2144,72 @@ async def save_schedule(payload: dict = Body(...)):
     return {"ok": True, "source": "local", "saved": saved_row}
 
 
+@app.get("/api/schedules/{schedule_id}/export.ics")
+async def export_saved_schedule_ics(
+    schedule_id: str,
+    user_id: str,
+    email: Optional[str] = None,
+):
+    """
+    Download an iCalendar (.ics) file for a saved schedule. Import into Google Calendar via
+    File → Import (web) or calendar Settings → Import & export.
+
+    Section times come from mock offerings; recurrence uses illustrative Fall 2026 dates.
+    Pass the same email used in NinerPath so blocked-time preferences can match the saved variant when possible.
+    """
+    uid = str(user_id or "").strip()
+    if not uid:
+        raise HTTPException(status_code=400, detail="user_id is required.")
+    row = await _find_saved_schedule_row(uid, schedule_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Saved schedule not found.")
+    course_ids = list(row.get("course_ids") or [])
+    if not course_ids:
+        raise HTTPException(status_code=400, detail="No courses in this saved schedule.")
+    term_label = (row.get("term") or row.get("term_label") or REGISTRATION_TERM_LABEL).strip() or REGISTRATION_TERM_LABEL
+    try:
+        variant_index = int(row.get("variant_index") or 0)
+    except (TypeError, ValueError):
+        variant_index = 0
+    variant_index = max(0, variant_index)
+
+    blocked: list = []
+    em = str(email or "").strip()
+    if em:
+        hist = load_json("student_history.json").get(em)
+        if isinstance(hist, dict):
+            sp = hist.get("schedule_preferences") or {}
+            if isinstance(sp, dict):
+                blocked = normalize_blocked_time_windows(sp.get("blocked_time_windows"))
+
+    max_v = max(32, variant_index + 12)
+    built = build_schedule_variants(course_ids, term_label, max_variants=max_v, blocked_windows=blocked or None)
+    variants = built.get("variants") or []
+    if not variants and blocked:
+        built = build_schedule_variants(course_ids, term_label, max_variants=max_v, blocked_windows=None)
+        variants = built.get("variants") or []
+    if not variants:
+        raise HTTPException(
+            status_code=404,
+            detail="Could not build a conflict-free weekly layout from mock section data for these courses.",
+        )
+    vi = min(variant_index, len(variants) - 1)
+    sections = variants[vi].get("sections") or []
+    if not sections:
+        raise HTTPException(status_code=404, detail="No section rows available for export.")
+    ics_body = build_schedule_ics_document(sections, term_label, calendar_title=f"NinerPath — {term_label}")
+    safe = re.sub(r"[^a-zA-Z0-9_.-]+", "-", term_label.strip()).strip("-").lower() or "schedule"
+    filename = f"ninerpath-{safe}.ics"
+    return Response(
+        content=ics_body,
+        media_type="text/calendar; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "no-store",
+        },
+    )
+
+
 @app.get("/api/degree-plans")
 async def get_degree_plans():
     return DEGREE_PLANS
@@ -1818,6 +2247,7 @@ async def auto_generate_schedule(
     history_data = load_json("student_history.json")
     student_history = history_data.get(email, {"completed_courses": []})
     completed_ids = {course["id"] for course in student_history.get("completed_courses", [])}
+    sp = student_history.get("schedule_preferences") if isinstance(student_history.get("schedule_preferences"), dict) else {}
 
     if degree not in DEGREE_PLANS:
         degree = "bs_computer_science"
@@ -1834,6 +2264,7 @@ async def auto_generate_schedule(
         degree_key=degree,
         term_label=eff_label,
         class_standing_override=student_history.get("class_standing"),
+        schedule_preferences=sp,
     )
     cap = max(1, min(max_schedule_variants, 24))
     attach_variants_to_combination_options(schedule, eff_label, cap)

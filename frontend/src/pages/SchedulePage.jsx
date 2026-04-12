@@ -36,6 +36,11 @@ export default function SchedulePage({ session, onSignOut }) {
   const [saveSaving, setSaveSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
   const [saveError, setSaveError] = useState('');
+  const [blockedRows, setBlockedRows] = useState([]);
+  const [prefsLoading, setPrefsLoading] = useState(false);
+  const [prefsSaving, setPrefsSaving] = useState(false);
+  const [prefsMessage, setPrefsMessage] = useState('');
+  const [prefsError, setPrefsError] = useState('');
 
   const combinationOptions = useMemo(() => {
     const from = generatedSchedule?.combination_options;
@@ -139,6 +144,40 @@ export default function SchedulePage({ session, onSignOut }) {
 
   useEffect(() => {
     if (!session?.user?.email) return undefined;
+    setPrefsLoading(true);
+    setPrefsError('');
+    const pAc = new AbortController();
+    const pParams = new URLSearchParams({ email: session.user.email });
+    fetch(`${API_BASE}/api/student/schedule-preferences?${pParams.toString()}`, { signal: pAc.signal })
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.detail || 'Failed to load preferences.');
+        return data;
+      })
+      .then((data) => {
+        const wins = data?.schedule_preferences?.blocked_time_windows;
+        if (Array.isArray(wins) && wins.length > 0) {
+          setBlockedRows(
+            wins.map((w) => ({
+              days: typeof w.days === 'string' ? w.days : '',
+              start: typeof w.start === 'string' ? w.start : '09:00',
+              end: typeof w.end === 'string' ? w.end : '12:00',
+            })),
+          );
+        } else {
+          setBlockedRows([]);
+        }
+      })
+      .catch((err) => {
+        if (err.name === 'AbortError') return;
+        setBlockedRows([]);
+      })
+      .finally(() => setPrefsLoading(false));
+    return () => pAc.abort();
+  }, [session?.user?.email]);
+
+  useEffect(() => {
+    if (!session?.user?.email) return undefined;
     setLoading(true);
     setError('');
     const params = new URLSearchParams({
@@ -161,6 +200,7 @@ export default function SchedulePage({ session, onSignOut }) {
         setSelectedVariantIndex(0);
         setSaveMessage('');
         setSaveError('');
+        setPrefsMessage('');
       })
       .catch((err) => {
         if (err.name === 'AbortError') return;
@@ -170,6 +210,63 @@ export default function SchedulePage({ session, onSignOut }) {
       .finally(() => setLoading(false));
     return () => ac.abort();
   }, [session?.user?.email, degree, concentration, refreshKey]);
+
+  const saveSchedulePreferences = () => {
+    if (!session?.user?.email) return;
+    const windows = blockedRows
+      .filter((r) => (r.days || '').trim())
+      .map((r) => ({
+        days: r.days.trim().toUpperCase(),
+        start: r.start || '09:00',
+        end: r.end || '12:00',
+      }));
+    setPrefsSaving(true);
+    setPrefsMessage('');
+    setPrefsError('');
+    fetch(`${API_BASE}/api/student/schedule-preferences`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: session.user.email,
+        blocked_time_windows: windows,
+      }),
+    })
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(typeof data?.detail === 'string' ? data.detail : 'Save failed.');
+        return data;
+      })
+      .then((data) => {
+        const wins = data?.schedule_preferences?.blocked_time_windows;
+        if (Array.isArray(wins)) {
+          if (wins.length > 0) {
+            setBlockedRows(
+              wins.map((w) => ({
+                days: typeof w.days === 'string' ? w.days : '',
+                start: typeof w.start === 'string' ? w.start : '09:00',
+                end: typeof w.end === 'string' ? w.end : '12:00',
+              })),
+            );
+          } else {
+            setBlockedRows([]);
+          }
+        }
+        setPrefsMessage('Schedule preferences saved. Regenerating options…');
+        setRefreshKey((k) => k + 1);
+      })
+      .catch((err) => setPrefsError(err.message || 'Save failed.'))
+      .finally(() => setPrefsSaving(false));
+  };
+
+  const addBlockedRow = () => {
+    setBlockedRows((rows) => [...rows, { days: '', start: '09:00', end: '12:00' }]);
+  };
+
+  const removeBlockedRow = (index) => {
+    setBlockedRows((rows) => rows.filter((_, i) => i !== index));
+  };
+
+  const appliedBlocks = generatedSchedule?.blocked_time_windows_applied;
 
   return (
     <div className="min-h-screen bg-slate-100 font-sans text-gray-900">
@@ -236,6 +333,101 @@ export default function SchedulePage({ session, onSignOut }) {
           </button>
         </div>
 
+        {session?.user?.email && (
+          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm space-y-3">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <div>
+                <h2 className="text-sm font-bold text-gray-900">Blocked class times</h2>
+                <p className="text-xs text-gray-600 mt-0.5">
+                  The scheduler will not place sections that overlap these windows (same day codes as the catalog: M T W R F).
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={saveSchedulePreferences}
+                disabled={prefsSaving || prefsLoading}
+                className="rounded-lg bg-gray-800 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-900 disabled:bg-gray-400"
+              >
+                {prefsSaving ? 'Saving…' : 'Save preferences'}
+              </button>
+            </div>
+            {prefsLoading && <p className="text-xs text-gray-500">Loading saved preferences…</p>}
+            {prefsMessage && (
+              <p className="text-xs text-emerald-800 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">{prefsMessage}</p>
+            )}
+            {prefsError && (
+              <p className="text-xs text-red-800 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{prefsError}</p>
+            )}
+            <div className="space-y-2">
+              {blockedRows.length === 0 ? (
+                <p className="text-sm text-gray-600">
+                  No blocked windows — all section times are allowed. Add a row to block meeting times, or leave empty
+                  and save to clear saved blocks.
+                </p>
+              ) : (
+                blockedRows.map((row, idx) => (
+                  <div key={idx} className="flex flex-wrap items-end gap-2">
+                    <div className="flex flex-col gap-0.5 min-w-[120px] flex-1">
+                      <label className="text-[10px] font-semibold text-gray-500">Days</label>
+                      <input
+                        type="text"
+                        value={row.days}
+                        onChange={(e) =>
+                          setBlockedRows((rows) =>
+                            rows.map((r, i) => (i === idx ? { ...r, days: e.target.value } : r)),
+                          )
+                        }
+                        placeholder="e.g. MWF"
+                        className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm uppercase"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <label className="text-[10px] font-semibold text-gray-500">From</label>
+                      <input
+                        type="time"
+                        value={row.start}
+                        onChange={(e) =>
+                          setBlockedRows((rows) =>
+                            rows.map((r, i) => (i === idx ? { ...r, start: e.target.value } : r)),
+                          )
+                        }
+                        className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <label className="text-[10px] font-semibold text-gray-500">To</label>
+                      <input
+                        type="time"
+                        value={row.end}
+                        onChange={(e) =>
+                          setBlockedRows((rows) =>
+                            rows.map((r, i) => (i === idx ? { ...r, end: e.target.value } : r)),
+                          )
+                        }
+                        className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeBlockedRow(idx)}
+                      className="text-xs text-red-700 hover:underline mb-1"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={addBlockedRow}
+              className="text-sm font-semibold text-teal-800 hover:underline"
+            >
+              + Add window
+            </button>
+          </div>
+        )}
+
         {error && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-900 text-sm">{error}</div>
         )}
@@ -249,6 +441,17 @@ export default function SchedulePage({ session, onSignOut }) {
                   {activeCombination?.generated_credits ?? generatedSchedule.generated_credits} credits)
                 </h2>
                 <p className="text-sm text-gray-600 mt-1">{generatedSchedule.concentration_label}</p>
+                {Array.isArray(appliedBlocks) && appliedBlocks.length > 0 && (
+                  <p className="text-xs text-amber-900 bg-amber-50 border border-amber-100 rounded-lg px-2 py-1.5 mt-2 max-w-xl">
+                    Avoiding class meetings:{' '}
+                    {appliedBlocks.map((b, i) => (
+                      <span key={i}>
+                        {i > 0 ? '; ' : ''}
+                        {b.days} {b.start}–{b.end}
+                      </span>
+                    ))}
+                  </p>
+                )}
               </div>
               <button
                 type="button"
@@ -331,7 +534,6 @@ export default function SchedulePage({ session, onSignOut }) {
                     })}
                   </div>
                 </div>
-
                 <ul className="space-y-2 border-b border-gray-100 pb-4 mb-4">
                   {(activeCombination.recommended_courses ?? []).map((course) => {
                     const sec = activeSectionMap.get(course.id);

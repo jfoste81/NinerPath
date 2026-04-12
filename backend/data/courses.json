@@ -95,5 +95,22 @@
   
   { "id": "WRDS 1103", "name": "Writing and Inquiry in Academic Contexts", "credits": 3, "prereqs": [], "min_standing": null },
   { "id": "CTCM 2530", "name": "Interdisciplinary Critical Thinking and Communication", "credits": 3, "prereqs": ["WRDS 1103"], "min_standing": "Sophomore" },
-  { "id": "POLS 1575", "name": "Foundations of American Democracy", "credits": 3, "prereqs": [], "min_standing": null }
+  { "id": "POLS 1575", "name": "Foundations of American Democracy", "credits": 3, "prereqs": [], "min_standing": null },
+
+  { "id": "ANTH 1501", "name": "Introduction to Anthropology (Global/Local Themes)", "credits": 3, "prereqs": [], "min_standing": null },
+  { "id": "ECON 1501", "name": "Introduction to Economics (Global/Local Themes)", "credits": 3, "prereqs": [], "min_standing": null },
+  { "id": "POLS 1501", "name": "Introduction to Political Science (Global/Local Themes)", "credits": 3, "prereqs": [], "min_standing": null },
+  { "id": "FILM 1502", "name": "Introduction to Film (Global/Local Themes)", "credits": 3, "prereqs": [], "min_standing": null },
+  { "id": "LANG 1502", "name": "Introduction to Language Studies (Global/Local Themes)", "credits": 3, "prereqs": [], "min_standing": null },
+  { "id": "PHIL 1502", "name": "Introduction to Philosophy (Global/Local Themes)", "credits": 3, "prereqs": [], "min_standing": null },
+  { "id": "ANTH 1511", "name": "Cultural Anthropology (Global/Local Themes)", "credits": 3, "prereqs": [], "min_standing": null },
+  { "id": "MUSC 1512", "name": "Music in Society (Global/Local Themes)", "credits": 3, "prereqs": [], "min_standing": null },
+  { "id": "HAHS 1511", "name": "Health and Human Services (Global/Local Themes)", "credits": 3, "prereqs": [], "min_standing": null },
+
+  { "id": "CHEM 1200", "name": "Preparatory Chemistry", "credits": 3, "prereqs": [], "min_standing": null },
+  { "id": "CHEM 1200L", "name": "Preparatory Chemistry Laboratory", "credits": 1, "prereqs": [], "min_standing": null },
+  { "id": "PSYC 1101", "name": "Introduction to Psychology", "credits": 3, "prereqs": [], "min_standing": null },
+  { "id": "PSYC 1101L", "name": "Introduction to Psychology Laboratory", "credits": 1, "prereqs": [], "min_standing": null },
+  { "id": "PHYS 1101", "name": "Introductory Physics I and Laboratory", "credits": 4, "prereqs": [], "min_standing": null },
+  { "id": "PHYS 1101L", "name": "Introductory Physics I Laboratory", "credits": 1, "prereqs": [], "min_standing": null }
 ]

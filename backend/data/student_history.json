@@ -4,35 +4,120 @@
     "degree_plan": "bs_computer_science",
     "concentration": "systems_and_networks",
     "completed_courses": [
-      { "id": "ITSC 1212", "term": "Spring 2026", "grade": "A" },
-      { "id": "MATH 1241", "term": "Spring 2026", "grade": "B+" },
-      { "id": "WRDS 1103", "term": "Spring 2026", "grade": "A-" },
-      { "id": "POLS 1575", "term": "Spring 2026", "grade": "A" }
+      {
+        "id": "ITSC 1212",
+        "term": "Spring 2026",
+        "grade": "A"
+      },
+      {
+        "id": "MATH 1241",
+        "term": "Spring 2026",
+        "grade": "B"
+      },
+      {
+        "id": "WRDS 1103",
+        "term": "Spring 2026",
+        "grade": "A"
+      },
+      {
+        "id": "POLS 1575",
+        "term": "Spring 2026",
+        "grade": "A"
+      }
     ],
-    "gpa": 3.75
+    "gpa": 3.75,
+    "schedule_preferences": {}
   },
   "john@charlotte.edu": {
     "display_name": "John Doe",
     "degree_plan": "bs_computer_science",
     "concentration": "data_science",
     "completed_courses": [
-      { "id": "WRDS 1103", "term": "Fall 2024", "grade": "B+" },
-      { "id": "MATH 1241", "term": "Fall 2024", "grade": "B" },
-      { "id": "ITSC 1212", "term": "Fall 2024", "grade": "A-" },
-      { "id": "BIOL 1110", "term": "Fall 2024", "grade": "B+" },
-      { "id": "BIOL 1110L", "term": "Fall 2024", "grade": "A" },
-      { "id": "MATH 1242", "term": "Spring 2025", "grade": "B+" },
-      { "id": "ITSC 1213", "term": "Spring 2025", "grade": "B+" },
-      { "id": "CTCM 2530", "term": "Spring 2025", "grade": "A-" },
-      { "id": "ANTH 1501", "term": "Spring 2025", "grade": "A" },
-      { "id": "ITSC 2175", "term": "Fall 2025", "grade": "B" },
-      { "id": "ITSC 2181", "term": "Fall 2025", "grade": "B+" },
-      { "id": "STAT 2122", "term": "Fall 2025", "grade": "A-" },
-      { "id": "CHEM 1200", "term": "Fall 2025", "grade": "B" },
-      { "id": "CHEM 1200L", "term": "Fall 2025", "grade": "B+" },
-      { "id": "ITSC 2214", "term": "Spring 2026", "grade": "B+" },
-      { "id": "ITSC 1600", "term": "Spring 2026", "grade": "A-" },
-      { "id": "ITSC 3688", "term": "Spring 2026", "grade": "A" }
+      {
+        "id": "WRDS 1103",
+        "term": "Fall 2024",
+        "grade": "B"
+      },
+      {
+        "id": "MATH 1241",
+        "term": "Fall 2024",
+        "grade": "B"
+      },
+      {
+        "id": "ITSC 1212",
+        "term": "Fall 2024",
+        "grade": "A"
+      },
+      {
+        "id": "BIOL 1110",
+        "term": "Fall 2024",
+        "grade": "B"
+      },
+      {
+        "id": "BIOL 1110L",
+        "term": "Fall 2024",
+        "grade": "A"
+      },
+      {
+        "id": "MATH 1242",
+        "term": "Spring 2025",
+        "grade": "B"
+      },
+      {
+        "id": "ITSC 1213",
+        "term": "Spring 2025",
+        "grade": "B"
+      },
+      {
+        "id": "CTCM 2530",
+        "term": "Spring 2025",
+        "grade": "A"
+      },
+      {
+        "id": "ANTH 1501",
+        "term": "Spring 2025",
+        "grade": "A"
+      },
+      {
+        "id": "ITSC 2175",
+        "term": "Fall 2025",
+        "grade": "B"
+      },
+      {
+        "id": "ITSC 2181",
+        "term": "Fall 2025",
+        "grade": "B"
+      },
+      {
+        "id": "STAT 2122",
+        "term": "Fall 2025",
+        "grade": "A"
+      },
+      {
+        "id": "CHEM 1200",
+        "term": "Fall 2025",
+        "grade": "B"
+      },
+      {
+        "id": "CHEM 1200L",
+        "term": "Fall 2025",
+        "grade": "B"
+      },
+      {
+        "id": "ITSC 2214",
+        "term": "Spring 2026",
+        "grade": "B"
+      },
+      {
+        "id": "ITSC 1600",
+        "term": "Spring 2026",
+        "grade": "A"
+      },
+      {
+        "id": "ITSC 3688",
+        "term": "Spring 2026",
+        "grade": "A"
+      }
     ],
     "gpa": 3.42
   },
@@ -41,37 +126,161 @@
     "degree_plan": "bs_computer_science",
     "concentration": "cybersecurity",
     "completed_courses": [
-      { "id": "WRDS 1103", "term": "Fall 2022", "grade": "A-" },
-      { "id": "MATH 1241", "term": "Fall 2022", "grade": "A" },
-      { "id": "ITSC 1212", "term": "Fall 2022", "grade": "A" },
-      { "id": "POLS 1575", "term": "Fall 2022", "grade": "B+" },
-      { "id": "MATH 1242", "term": "Spring 2023", "grade": "B+" },
-      { "id": "ITSC 1213", "term": "Spring 2023", "grade": "A-" },
-      { "id": "CTCM 2530", "term": "Spring 2023", "grade": "A-" },
-      { "id": "BIOL 1110", "term": "Spring 2023", "grade": "B" },
-      { "id": "BIOL 1110L", "term": "Spring 2023", "grade": "A" },
-      { "id": "ITSC 2175", "term": "Fall 2023", "grade": "A-" },
-      { "id": "ITSC 2181", "term": "Fall 2023", "grade": "B+" },
-      { "id": "STAT 2122", "term": "Fall 2023", "grade": "B+" },
-      { "id": "ANTH 1501", "term": "Fall 2023", "grade": "A" },
-      { "id": "ITSC 2214", "term": "Spring 2024", "grade": "B+" },
-      { "id": "ITSC 1600", "term": "Spring 2024", "grade": "A-" },
-      { "id": "MATH 2164", "term": "Spring 2024", "grade": "B+" },
-      { "id": "PHYS 1101", "term": "Spring 2024", "grade": "B" },
-      { "id": "PHYS 1101L", "term": "Spring 2024", "grade": "A-" },
-      { "id": "ITSC 3146", "term": "Fall 2024", "grade": "A-" },
-      { "id": "ITSC 3155", "term": "Fall 2024", "grade": "B+" },
-      { "id": "ITSC 3160", "term": "Fall 2024", "grade": "A-" },
-      { "id": "FILM 1502", "term": "Fall 2024", "grade": "A" },
-      { "id": "ITIS 3135", "term": "Spring 2025", "grade": "A" },
-      { "id": "ITIS 3200", "term": "Spring 2025", "grade": "A-" },
-      { "id": "ITSC 3688", "term": "Spring 2025", "grade": "A" },
-      { "id": "MUSC 1512", "term": "Spring 2025", "grade": "B+" },
-      { "id": "ITIS 3246", "term": "Fall 2025", "grade": "A-" },
-      { "id": "ITIS 4221", "term": "Fall 2025", "grade": "B+" },
-      { "id": "ITIS 4260", "term": "Fall 2025", "grade": "A-" },
-      { "id": "ITIS 4250", "term": "Spring 2026", "grade": "A" },
-      { "id": "ITCS 4114", "term": "Spring 2026", "grade": "B+" }
+      {
+        "id": "WRDS 1103",
+        "term": "Fall 2022",
+        "grade": "A"
+      },
+      {
+        "id": "MATH 1241",
+        "term": "Fall 2022",
+        "grade": "A"
+      },
+      {
+        "id": "ITSC 1212",
+        "term": "Fall 2022",
+        "grade": "A"
+      },
+      {
+        "id": "POLS 1575",
+        "term": "Fall 2022",
+        "grade": "B"
+      },
+      {
+        "id": "MATH 1242",
+        "term": "Spring 2023",
+        "grade": "B"
+      },
+      {
+        "id": "ITSC 1213",
+        "term": "Spring 2023",
+        "grade": "A"
+      },
+      {
+        "id": "CTCM 2530",
+        "term": "Spring 2023",
+        "grade": "A"
+      },
+      {
+        "id": "BIOL 1110",
+        "term": "Spring 2023",
+        "grade": "B"
+      },
+      {
+        "id": "BIOL 1110L",
+        "term": "Spring 2023",
+        "grade": "A"
+      },
+      {
+        "id": "ITSC 2175",
+        "term": "Fall 2023",
+        "grade": "A"
+      },
+      {
+        "id": "ITSC 2181",
+        "term": "Fall 2023",
+        "grade": "B"
+      },
+      {
+        "id": "STAT 2122",
+        "term": "Fall 2023",
+        "grade": "B"
+      },
+      {
+        "id": "ANTH 1501",
+        "term": "Fall 2023",
+        "grade": "A"
+      },
+      {
+        "id": "ITSC 2214",
+        "term": "Spring 2024",
+        "grade": "B"
+      },
+      {
+        "id": "ITSC 1600",
+        "term": "Spring 2024",
+        "grade": "A"
+      },
+      {
+        "id": "MATH 2164",
+        "term": "Spring 2024",
+        "grade": "B"
+      },
+      {
+        "id": "PHYS 1101",
+        "term": "Spring 2024",
+        "grade": "B"
+      },
+      {
+        "id": "PHYS 1101L",
+        "term": "Spring 2024",
+        "grade": "A"
+      },
+      {
+        "id": "ITSC 3146",
+        "term": "Fall 2024",
+        "grade": "A"
+      },
+      {
+        "id": "ITSC 3155",
+        "term": "Fall 2024",
+        "grade": "B"
+      },
+      {
+        "id": "ITSC 3160",
+        "term": "Fall 2024",
+        "grade": "A"
+      },
+      {
+        "id": "FILM 1502",
+        "term": "Fall 2024",
+        "grade": "A"
+      },
+      {
+        "id": "ITIS 3135",
+        "term": "Spring 2025",
+        "grade": "A"
+      },
+      {
+        "id": "ITIS 3200",
+        "term": "Spring 2025",
+        "grade": "A"
+      },
+      {
+        "id": "ITSC 3688",
+        "term": "Spring 2025",
+        "grade": "A"
+      },
+      {
+        "id": "MUSC 1512",
+        "term": "Spring 2025",
+        "grade": "B"
+      },
+      {
+        "id": "ITIS 3246",
+        "term": "Fall 2025",
+        "grade": "A"
+      },
+      {
+        "id": "ITIS 4221",
+        "term": "Fall 2025",
+        "grade": "B"
+      },
+      {
+        "id": "ITIS 4260",
+        "term": "Fall 2025",
+        "grade": "A"
+      },
+      {
+        "id": "ITIS 4250",
+        "term": "Spring 2026",
+        "grade": "A"
+      },
+      {
+        "id": "ITCS 4114",
+        "term": "Spring 2026",
+        "grade": "B"
+      }
     ],
     "gpa": 3.65
   },
@@ -80,16 +289,56 @@
     "degree_plan": "ba_computer_science",
     "concentration": "bioinformatics",
     "completed_courses": [
-      { "id": "WRDS 1103", "term": "Fall 2025", "grade": "A" },
-      { "id": "MATH 1241", "term": "Fall 2025", "grade": "B+" },
-      { "id": "ITSC 1212", "term": "Fall 2025", "grade": "A-" },
-      { "id": "CHEM 1251", "term": "Fall 2025", "grade": "B" },
-      { "id": "CHEM 1251L", "term": "Fall 2025", "grade": "A" },
-      { "id": "ITSC 1213", "term": "Spring 2026", "grade": "A-" },
-      { "id": "BINF 1101", "term": "Spring 2026", "grade": "B+" },
-      { "id": "CHEM 1252", "term": "Spring 2026", "grade": "B+" },
-      { "id": "CHEM 1252L", "term": "Spring 2026", "grade": "A" },
-      { "id": "CTCM 2530", "term": "Spring 2026", "grade": "A" }
+      {
+        "id": "WRDS 1103",
+        "term": "Fall 2025",
+        "grade": "A"
+      },
+      {
+        "id": "MATH 1241",
+        "term": "Fall 2025",
+        "grade": "B"
+      },
+      {
+        "id": "ITSC 1212",
+        "term": "Fall 2025",
+        "grade": "A"
+      },
+      {
+        "id": "CHEM 1251",
+        "term": "Fall 2025",
+        "grade": "B"
+      },
+      {
+        "id": "CHEM 1251L",
+        "term": "Fall 2025",
+        "grade": "A"
+      },
+      {
+        "id": "ITSC 1213",
+        "term": "Spring 2026",
+        "grade": "A"
+      },
+      {
+        "id": "BINF 1101",
+        "term": "Spring 2026",
+        "grade": "B"
+      },
+      {
+        "id": "CHEM 1252",
+        "term": "Spring 2026",
+        "grade": "B"
+      },
+      {
+        "id": "CHEM 1252L",
+        "term": "Spring 2026",
+        "grade": "A"
+      },
+      {
+        "id": "CTCM 2530",
+        "term": "Spring 2026",
+        "grade": "A"
+      }
     ],
     "gpa": 3.61
   },
@@ -98,22 +347,86 @@
     "degree_plan": "ba_computer_science",
     "concentration": "information_technology",
     "completed_courses": [
-      { "id": "WRDS 1103", "term": "Fall 2024", "grade": "A-" },
-      { "id": "MATH 1241", "term": "Fall 2024", "grade": "B+" },
-      { "id": "ITSC 1212", "term": "Fall 2024", "grade": "A" },
-      { "id": "POLS 1575", "term": "Fall 2024", "grade": "B" },
-      { "id": "ITSC 1213", "term": "Spring 2025", "grade": "B+" },
-      { "id": "STAT 1220", "term": "Spring 2025", "grade": "A-" },
-      { "id": "CTCM 2530", "term": "Spring 2025", "grade": "A-" },
-      { "id": "BIOL 1110", "term": "Spring 2025", "grade": "B+" },
-      { "id": "ITSC 2214", "term": "Fall 2025", "grade": "B" },
-      { "id": "ITSC 2175", "term": "Fall 2025", "grade": "B+" },
-      { "id": "ITSC 1600", "term": "Fall 2025", "grade": "A" },
-      { "id": "ANTH 1501", "term": "Fall 2025", "grade": "A-" },
-      { "id": "ITIS 3130", "term": "Spring 2026", "grade": "B+" },
-      { "id": "STAT 2223", "term": "Spring 2026", "grade": "A-" },
-      { "id": "ITIS 3135", "term": "Spring 2026", "grade": "A-" },
-      { "id": "ITSC 3688", "term": "Spring 2026", "grade": "B+" }
+      {
+        "id": "WRDS 1103",
+        "term": "Fall 2024",
+        "grade": "A"
+      },
+      {
+        "id": "MATH 1241",
+        "term": "Fall 2024",
+        "grade": "B"
+      },
+      {
+        "id": "ITSC 1212",
+        "term": "Fall 2024",
+        "grade": "A"
+      },
+      {
+        "id": "POLS 1575",
+        "term": "Fall 2024",
+        "grade": "B"
+      },
+      {
+        "id": "ITSC 1213",
+        "term": "Spring 2025",
+        "grade": "B"
+      },
+      {
+        "id": "STAT 1220",
+        "term": "Spring 2025",
+        "grade": "A"
+      },
+      {
+        "id": "CTCM 2530",
+        "term": "Spring 2025",
+        "grade": "A"
+      },
+      {
+        "id": "BIOL 1110",
+        "term": "Spring 2025",
+        "grade": "B"
+      },
+      {
+        "id": "ITSC 2214",
+        "term": "Fall 2025",
+        "grade": "B"
+      },
+      {
+        "id": "ITSC 2175",
+        "term": "Fall 2025",
+        "grade": "B"
+      },
+      {
+        "id": "ITSC 1600",
+        "term": "Fall 2025",
+        "grade": "A"
+      },
+      {
+        "id": "ANTH 1501",
+        "term": "Fall 2025",
+        "grade": "A"
+      },
+      {
+        "id": "ITIS 3130",
+        "term": "Spring 2026",
+        "grade": "B"
+      },
+      {
+        "id": "STAT 2223",
+        "term": "Spring 2026",
+        "grade": "A"
+      },
+      {
+        "id": "ITIS 3135",
+        "term": "Spring 2026",
+        "grade": "A"
+      },
+      {
+        "id": "ITSC 3688",
+        "term": "Spring 2026",
+        "grade": "B"
+      }
     ],
     "gpa": 3.45
   }
