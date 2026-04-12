@@ -1,0 +1,108 @@
+{
+  "bs_computer_science": {
+    "name": "B.S. in Computer Science",
+    "total_degree_credits": 120,
+    "major_core": [
+      "ITSC 1212", "ITSC 1213", "ITSC 1600", "ITSC 2175", "ITSC 2181", 
+      "ITSC 2214", "ITSC 3146", "ITSC 3155", "ITSC 3688"
+    ],
+    "math_and_statistics": ["MATH 2164", "STAT 2122"],
+    "electives_other_disciplines_credits": 15,
+    "capstone_options": ["ITSC 4155", "ITSC 4681"],
+    "concentrations": {
+      "bioinformatics": {
+        "required_courses": ["BINF 1101", "BINF 2111", "BINF 3101", "BINF 4600"],
+        "elective_subarea_1": ["BINF 3121", "BINF 4211"],
+        "elective_subarea_2": ["BINF 4171", "BINF 4191"],
+        "elective_subarea_3": ["BINF 3131", "BINF 3201"]
+      },
+      "ai_robotics_and_gaming": {
+        "required_options": ["ITCS 3153", "ITCS 3156"],
+        "electives": {
+          "choose": 4,
+          "options": [
+            "ITCS 3120", "ITCS 3153", "ITCS 3156", "ITCS 4101", "ITCS 4114", 
+            "ITCS 4123", "ITCS 4124", "ITCS 4150", "ITCS 4151", "ITCS 4152", 
+            "ITCS 4230", "ITCS 4231", "ITCS 4236"
+          ]
+        },
+        "technical_electives_credits": 6
+      },
+      "data_science": {
+        "required_courses": ["ITCS 3162", "ITSC 3160"],
+        "electives": {
+          "choose": 3,
+          "options": [
+            "ITCS 3156", "ITCS 3190", "ITCS 3216", "ITCS 4114", 
+            "ITCS 4121", "ITCS 4122", "ITCS 4152", "ITIS 4310"
+          ]
+        },
+        "technical_electives_credits": 6
+      },
+      "systems_and_networks": {
+        "electives": {
+          "choose": 5,
+          "options": [
+            "ITCS 3143", "ITCS 3156", "ITCS 3166", "ITCS 3190", "ITCS 4102", 
+            "ITCS 4141", "ITIS 3200", "ITIS 3246", "ITIS 4166", "ITSC 3160"
+          ]
+        },
+        "technical_electives_credits": 6
+      },
+      "cybersecurity": {
+        "required_courses": [
+          "ITIS 3135", "ITIS 3200", "ITIS 3246", "ITIS 4221", "ITIS 4260", "ITSC 3160"
+        ],
+        "required_security_elective": ["ITIS 4250", "ITIS 4214", "ITIS 4261"],
+        "technical_electives_credits": 3
+      },
+      "web_mobile_and_software_engineering": {
+        "required_courses": ["ITIS 3135", "ITIS 3310", "ITIS 4221", "ITSC 3160"],
+        "electives": {
+          "choose": 3,
+          "options": [
+            "ITCS 3112", "ITIS 3130", "ITIS 4350", "ITIS 3300", 
+            "ITIS 3320", "ITIS 4166", "ITIS 4180"
+          ]
+        },
+        "technical_electives_credits": 6
+      }
+    }
+  },
+  "ba_computer_science": {
+    "name": "B.A. in Computer Science",
+    "total_degree_credits": 120,
+    "default_concentration": "human_computer_interaction",
+    "major_core": [
+      "ITSC 1212", "ITSC 1213", "ITSC 1600", "ITSC 2175", "ITSC 2181", 
+      "ITSC 2214", "ITSC 3146", "ITSC 3155", "ITSC 3688"
+    ],
+    "capstone_options": ["ITIS 4390", "ITSC 4681"],
+    "concentrations": {
+      "bioinformatics": {
+        "advanced_statistics": ["BINF 3121"],
+        "related_courses": ["BIOL 2120", "BIOL 2130", "CHEM 1251", "CHEM 1251L", "CHEM 1252", "CHEM 1252L"],
+        "required_courses": ["BINF 1101", "BINF 2111", "BINF 3101", "BINF 4600", "BIOL 3111", "BIOL 3166"],
+        "elective_subarea_1": ["BINF 4211"],
+        "elective_subarea_2": ["BINF 4171", "BINF 4191"],
+        "elective_subarea_3": ["BINF 3131", "BINF 3201"]
+      },
+      "human_computer_interaction": {
+        "advanced_statistics": ["STAT 2223"],
+        "electives_other_disciplines_credits": 15,
+        "required_courses": ["ITIS 3130", "ITIS 3135", "ITIS 3140", "ITIS 4350"],
+        "electives": {
+          "choose": 2,
+          "options": ["ITIS 3216", "ITIS 4214", "ITIS 4353", "ITIS 4355", "ITIS 4358", "ITIS 4360"]
+        },
+        "technical_electives_credits": 9
+      },
+      "information_technology": {
+        "advanced_statistics": ["STAT 2223"],
+        "electives_other_disciplines_credits": 15,
+        "required_courses": ["ITIS 3130", "ITIS 3135", "ITIS 3200", "ITIS 3300", "ITSC 3160"],
+        "technical_electives_credits": 18
+      }
+    }
+  }
+}
