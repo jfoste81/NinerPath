@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { API_BASE, CONCENTRATIONS_BY_DEGREE } from '../constants';
+import SavedSchedulesSidebar from '../components/SavedSchedulesSidebar';
+import { useDashboardData } from '../hooks/useDashboardData';
+import { useDegreeAudit } from '../hooks/useDegreeAudit';
 
 function StatusIcon({ status }) {
   if (status === 'completed') {
@@ -192,77 +195,23 @@ function AuditSection({ section }) {
 }
 
 export default function DegreeHomePage({ session, onSignOut }) {
-  const [dashboardData, setDashboardData] = useState(null);
-  const [dashboardLoading, setDashboardLoading] = useState(false);
-  const [dashboardError, setDashboardError] = useState('');
-  const [audit, setAudit] = useState(null);
-  const [auditLoading, setAuditLoading] = useState(false);
-  const [auditError, setAuditError] = useState('');
   const [selectedDegree, setSelectedDegree] = useState('bs_computer_science');
   const [selectedConcentration, setSelectedConcentration] = useState('systems_and_networks');
   const [mockPrefsApplied, setMockPrefsApplied] = useState(false);
 
-  useEffect(() => {
-    if (!session?.user?.id || !session?.user?.email) return undefined;
-    const ac = new AbortController();
-    const q = new URLSearchParams({
-      email: session.user.email,
-      degree: selectedDegree,
-      concentration: selectedConcentration,
-      max_schedule_variants: '16',
-    });
-    setDashboardLoading(true);
-    setDashboardError('');
-    fetch(`${API_BASE}/api/dashboard/${session.user.id}?${q.toString()}`, { signal: ac.signal })
-      .then(async (res) => {
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          const msg =
-            typeof data?.detail === 'string'
-              ? data.detail
-              : Array.isArray(data?.detail)
-                ? data.detail.map((d) => d.msg || d).join(' ')
-                : res.statusText || 'Dashboard request failed';
-          throw new Error(msg);
-        }
-        return data;
-      })
-      .then(setDashboardData)
-      .catch((err) => {
-        if (err.name === 'AbortError') return;
-        setDashboardData(null);
-        setDashboardError(err.message || 'Could not load dashboard.');
-      })
-      .finally(() => setDashboardLoading(false));
-    return () => ac.abort();
-  }, [session, selectedDegree, selectedConcentration]);
+  const { data: dashboardData, loading: dashboardLoading, error: dashboardError } = useDashboardData({
+    userId: session?.user?.id,
+    email: session?.user?.email,
+    selectedDegree,
+    selectedConcentration,
+  });
 
-  useEffect(() => {
-    if (!session?.user?.email) return undefined;
-    const ac = new AbortController();
-    const q = new URLSearchParams({
-      email: session.user.email,
-      degree: selectedDegree,
-      concentration: selectedConcentration,
-      user_id: session.user.id,
-    });
-    setAuditLoading(true);
-    setAuditError('');
-    fetch(`${API_BASE}/api/degree-audit?${q.toString()}`, { signal: ac.signal })
-      .then(async (res) => {
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.detail || res.statusText || 'Audit failed');
-        return data.audit;
-      })
-      .then(setAudit)
-      .catch((err) => {
-        if (err.name === 'AbortError') return;
-        setAudit(null);
-        setAuditError(err.message || 'Could not load degree audit.');
-      })
-      .finally(() => setAuditLoading(false));
-    return () => ac.abort();
-  }, [session?.user?.email, session?.user?.id, selectedDegree, selectedConcentration]);
+  const { audit, loading: auditLoading, error: auditError } = useDegreeAudit({
+    email: session?.user?.email,
+    userId: session?.user?.id,
+    selectedDegree,
+    selectedConcentration,
+  });
 
   useEffect(() => {
     const h = dashboardData?.history;
@@ -429,46 +378,12 @@ export default function DegreeHomePage({ session, onSignOut }) {
             </div>
           </div>
 
-          <aside className="w-full lg:w-80 shrink-0">
-            <div className="rounded-xl border border-gray-200 bg-white shadow-md p-5">
-              <h3 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-3 mb-4">Saved schedules</h3>
-              {dashboardLoading ? (
-                <div className="animate-pulse h-24 bg-gray-100 rounded" />
-              ) : (dashboardData?.upcoming ?? []).length > 0 ? (
-                <ul className="space-y-3">
-                  {(dashboardData.upcoming ?? []).map((sch) => (
-                    <li key={sch.id} className="rounded-lg border border-teal-200 bg-teal-50 px-3 py-3 text-sm">
-                      <span className="font-bold text-teal-900">{sch.term || '—'}</span>
-                      <p className="text-gray-700 mt-1">
-                        {Array.isArray(sch.course_ids) && sch.course_ids.length > 0
-                          ? `${sch.course_ids.length} course${sch.course_ids.length === 1 ? '' : 's'}`
-                          : 'No course list in record'}
-                      </p>
-                      {sch.created_at && (
-                        <p className="text-xs text-gray-500 mt-1">{new Date(sch.created_at).toLocaleString()}</p>
-                      )}
-                      {session?.user?.id && sch.id && (
-                        <div className="mt-3 pt-2 border-t border-teal-100 space-y-1.5">
-                          <button
-                            type="button"
-                            onClick={() => downloadScheduleIcs(sch.id, sch.term)}
-                            className="w-full rounded-lg bg-white border border-teal-300 px-3 py-2 text-xs font-semibold text-teal-900 hover:bg-teal-100/80 shadow-sm"
-                          >
-                            Download .ics (Google Calendar)
-                          </button>
-                          <p className="text-[10px] leading-snug text-gray-600">
-                            In Google Calendar: Settings → Import &amp; Export → Import, then upload this file.
-                          </p>
-                        </div>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-gray-600">No saved schedules yet. Use the Schedule page to explore Fall 2026 options.</p>
-              )}
-            </div>
-          </aside>
+          <SavedSchedulesSidebar
+            dashboardLoading={dashboardLoading}
+            upcoming={dashboardData?.upcoming}
+            session={session}
+            onDownloadScheduleIcs={downloadScheduleIcs}
+          />
         </div>
       </div>
     </div>

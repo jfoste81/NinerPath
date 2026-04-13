@@ -13,7 +13,13 @@ export default function App() {
     supabase.auth.getSession().then(({ data: { session: s } }) => setSession(s));
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
+    } = supabase.auth.onAuthStateChange((event, s) => {
+      setSession(s);
+      if (event === 'SIGNED_OUT') {
+        setEmail('');
+        setPassword('');
+      }
+    });
     return () => subscription.unsubscribe();
   }, []);
 

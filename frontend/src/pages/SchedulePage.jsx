@@ -1,46 +1,41 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import ScheduleCalendar from '../ScheduleCalendar';
+import CombinationSelector from '../components/CombinationSelector';
+import TimePreferencePanel from '../components/TimePreferencePanel';
 import { API_BASE, CONCENTRATIONS_BY_DEGREE } from '../constants';
-
-/** One line from mock section rows: e.g. "MWF · 10:00 AM - 10:50 AM" */
-function meetingSummary(section) {
-  if (!section) return '';
-  const d = (section.days || '').trim();
-  const t = (section.time || '').trim();
-  if (!d && !t) return '';
-  if (!d) return t;
-  if (!t) return d;
-  return `${d} · ${t}`;
-}
-
-function sectionMapFromVariant(variant) {
-  const m = new Map();
-  for (const s of variant?.sections ?? []) {
-    if (s.course_id) m.set(s.course_id, s);
-  }
-  return m;
-}
+import { useSchedulePageFeedback } from '../hooks/schedulePageUi';
+import { useScheduleGeneration } from '../hooks/useScheduleGeneration';
+import { useSchedulePreferencesLoad } from '../hooks/useSchedulePreferencesLoad';
+import { meetingSummary, sectionMapFromVariant } from '../utils/scheduleDisplay';
 
 export default function SchedulePage({ session, onSignOut }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const degree = searchParams.get('degree') || 'bs_computer_science';
   const concentration = searchParams.get('concentration') || 'systems_and_networks';
 
-  const [generatedSchedule, setGeneratedSchedule] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [selectedCombinationIndex, setSelectedCombinationIndex] = useState(0);
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [saveSaving, setSaveSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState('');
-  const [saveError, setSaveError] = useState('');
   const [blockedRows, setBlockedRows] = useState([]);
-  const [prefsLoading, setPrefsLoading] = useState(false);
-  const [prefsSaving, setPrefsSaving] = useState(false);
-  const [prefsMessage, setPrefsMessage] = useState('');
-  const [prefsError, setPrefsError] = useState('');
+  const { prefsUi, setPrefsUi, saveUi, setSaveUi, onPrefsLoadStart } = useSchedulePageFeedback();
+
+  const onScheduleGenerationSuccess = useCallback(() => {
+    setSelectedCombinationIndex(0);
+    setSelectedVariantIndex(0);
+    setSaveUi((s) => ({ ...s, message: '', error: '' }));
+    setPrefsUi((p) => ({ ...p, message: '' }));
+  }, []);
+
+  const { generatedSchedule, loading, error } = useScheduleGeneration({
+    email: session?.user?.email,
+    degree,
+    concentration,
+    refreshKey,
+    onSuccess: onScheduleGenerationSuccess,
+  });
+
+  const { prefsLoading } = useSchedulePreferencesLoad(session?.user?.email, setBlockedRows, onPrefsLoadStart);
 
   const combinationOptions = useMemo(() => {
     const from = generatedSchedule?.combination_options;
@@ -104,7 +99,7 @@ export default function SchedulePage({ session, onSignOut }) {
 
   const saveSchedule = () => {
     if (!session?.user?.id) {
-      setSaveError('You must be signed in to save a schedule.');
+      setSaveUi((s) => ({ ...s, error: 'You must be signed in to save a schedule.' }));
       return;
     }
     const variant = scheduleVariants[selectedVariantIndex];
@@ -112,12 +107,10 @@ export default function SchedulePage({ session, onSignOut }) {
     const fromRecommended = activeCombination?.recommended_courses?.map((c) => c.id).filter(Boolean);
     const courseIds = (fromVariant?.length ? fromVariant : fromRecommended) ?? [];
     if (!courseIds.length) {
-      setSaveError('Nothing to save yet — generate a schedule with at least one course.');
+      setSaveUi((s) => ({ ...s, error: 'Nothing to save yet — generate a schedule with at least one course.' }));
       return;
     }
-    setSaveSaving(true);
-    setSaveError('');
-    setSaveMessage('');
+    setSaveUi((s) => ({ ...s, saving: true, message: '', error: '' }));
     fetch(`${API_BASE}/api/schedules/save`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -136,80 +129,14 @@ export default function SchedulePage({ session, onSignOut }) {
       })
       .then((data) => {
         const src = data.source === 'supabase' ? 'cloud' : 'this device';
-        setSaveMessage(`Schedule saved (${src}). Open Degree audit to see blue dots on planned courses.`);
+        setSaveUi((s) => ({
+          ...s,
+          message: `Schedule saved (${src}). Open Degree audit to see blue dots on planned courses.`,
+        }));
       })
-      .catch((err) => setSaveError(err.message || 'Save failed.'))
-      .finally(() => setSaveSaving(false));
+      .catch((err) => setSaveUi((s) => ({ ...s, error: err.message || 'Save failed.' })))
+      .finally(() => setSaveUi((s) => ({ ...s, saving: false })));
   };
-
-  useEffect(() => {
-    if (!session?.user?.email) return undefined;
-    setPrefsLoading(true);
-    setPrefsError('');
-    const pAc = new AbortController();
-    const pParams = new URLSearchParams({ email: session.user.email });
-    fetch(`${API_BASE}/api/student/schedule-preferences?${pParams.toString()}`, { signal: pAc.signal })
-      .then(async (res) => {
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.detail || 'Failed to load preferences.');
-        return data;
-      })
-      .then((data) => {
-        const wins = data?.schedule_preferences?.blocked_time_windows;
-        if (Array.isArray(wins) && wins.length > 0) {
-          setBlockedRows(
-            wins.map((w) => ({
-              days: typeof w.days === 'string' ? w.days : '',
-              start: typeof w.start === 'string' ? w.start : '09:00',
-              end: typeof w.end === 'string' ? w.end : '12:00',
-            })),
-          );
-        } else {
-          setBlockedRows([]);
-        }
-      })
-      .catch((err) => {
-        if (err.name === 'AbortError') return;
-        setBlockedRows([]);
-      })
-      .finally(() => setPrefsLoading(false));
-    return () => pAc.abort();
-  }, [session?.user?.email]);
-
-  useEffect(() => {
-    if (!session?.user?.email) return undefined;
-    setLoading(true);
-    setError('');
-    const params = new URLSearchParams({
-      email: session.user.email,
-      degree,
-      concentration,
-      max_credits: '15',
-      max_schedule_variants: '16',
-    });
-    const ac = new AbortController();
-    fetch(`${API_BASE}/api/schedule/generate?${params.toString()}`, { signal: ac.signal })
-      .then(async (res) => {
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.detail || 'Failed to generate schedule.');
-        return data.schedule;
-      })
-      .then((sched) => {
-        setGeneratedSchedule(sched);
-        setSelectedCombinationIndex(0);
-        setSelectedVariantIndex(0);
-        setSaveMessage('');
-        setSaveError('');
-        setPrefsMessage('');
-      })
-      .catch((err) => {
-        if (err.name === 'AbortError') return;
-        setGeneratedSchedule(null);
-        setError(err.message || 'Request failed.');
-      })
-      .finally(() => setLoading(false));
-    return () => ac.abort();
-  }, [session?.user?.email, degree, concentration, refreshKey]);
 
   const saveSchedulePreferences = () => {
     if (!session?.user?.email) return;
@@ -220,9 +147,7 @@ export default function SchedulePage({ session, onSignOut }) {
         start: r.start || '09:00',
         end: r.end || '12:00',
       }));
-    setPrefsSaving(true);
-    setPrefsMessage('');
-    setPrefsError('');
+    setPrefsUi((p) => ({ ...p, saving: true, message: '', error: '' }));
     fetch(`${API_BASE}/api/student/schedule-preferences`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -251,11 +176,14 @@ export default function SchedulePage({ session, onSignOut }) {
             setBlockedRows([]);
           }
         }
-        setPrefsMessage('Schedule preferences saved. Regenerating options…');
+        setPrefsUi((p) => ({
+          ...p,
+          message: 'Schedule preferences saved. Regenerating options…',
+        }));
         setRefreshKey((k) => k + 1);
       })
-      .catch((err) => setPrefsError(err.message || 'Save failed.'))
-      .finally(() => setPrefsSaving(false));
+      .catch((err) => setPrefsUi((p) => ({ ...p, error: err.message || 'Save failed.' })))
+      .finally(() => setPrefsUi((p) => ({ ...p, saving: false })));
   };
 
   const addBlockedRow = () => {
@@ -334,98 +262,15 @@ export default function SchedulePage({ session, onSignOut }) {
         </div>
 
         {session?.user?.email && (
-          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm space-y-3">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <div>
-                <h2 className="text-sm font-bold text-gray-900">Blocked class times</h2>
-                <p className="text-xs text-gray-600 mt-0.5">
-                  The scheduler will not place sections that overlap these windows (same day codes as the catalog: M T W R F).
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={saveSchedulePreferences}
-                disabled={prefsSaving || prefsLoading}
-                className="rounded-lg bg-gray-800 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-900 disabled:bg-gray-400"
-              >
-                {prefsSaving ? 'Saving…' : 'Save preferences'}
-              </button>
-            </div>
-            {prefsLoading && <p className="text-xs text-gray-500">Loading saved preferences…</p>}
-            {prefsMessage && (
-              <p className="text-xs text-emerald-800 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">{prefsMessage}</p>
-            )}
-            {prefsError && (
-              <p className="text-xs text-red-800 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{prefsError}</p>
-            )}
-            <div className="space-y-2">
-              {blockedRows.length === 0 ? (
-                <p className="text-sm text-gray-600">
-                  No blocked windows — all section times are allowed. Add a row to block meeting times, or leave empty
-                  and save to clear saved blocks.
-                </p>
-              ) : (
-                blockedRows.map((row, idx) => (
-                  <div key={idx} className="flex flex-wrap items-end gap-2">
-                    <div className="flex flex-col gap-0.5 min-w-[120px] flex-1">
-                      <label className="text-[10px] font-semibold text-gray-500">Days</label>
-                      <input
-                        type="text"
-                        value={row.days}
-                        onChange={(e) =>
-                          setBlockedRows((rows) =>
-                            rows.map((r, i) => (i === idx ? { ...r, days: e.target.value } : r)),
-                          )
-                        }
-                        placeholder="e.g. MWF"
-                        className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm uppercase"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-0.5">
-                      <label className="text-[10px] font-semibold text-gray-500">From</label>
-                      <input
-                        type="time"
-                        value={row.start}
-                        onChange={(e) =>
-                          setBlockedRows((rows) =>
-                            rows.map((r, i) => (i === idx ? { ...r, start: e.target.value } : r)),
-                          )
-                        }
-                        className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-0.5">
-                      <label className="text-[10px] font-semibold text-gray-500">To</label>
-                      <input
-                        type="time"
-                        value={row.end}
-                        onChange={(e) =>
-                          setBlockedRows((rows) =>
-                            rows.map((r, i) => (i === idx ? { ...r, end: e.target.value } : r)),
-                          )
-                        }
-                        className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm"
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeBlockedRow(idx)}
-                      className="text-xs text-red-700 hover:underline mb-1"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={addBlockedRow}
-              className="text-sm font-semibold text-teal-800 hover:underline"
-            >
-              + Add window
-            </button>
-          </div>
+          <TimePreferencePanel
+            prefsLoading={prefsLoading}
+            prefsUi={prefsUi}
+            blockedRows={blockedRows}
+            setBlockedRows={setBlockedRows}
+            onSavePreferences={saveSchedulePreferences}
+            addBlockedRow={addBlockedRow}
+            removeBlockedRow={removeBlockedRow}
+          />
         )}
 
         {error && (
@@ -456,84 +301,31 @@ export default function SchedulePage({ session, onSignOut }) {
               <button
                 type="button"
                 onClick={saveSchedule}
-                disabled={saveSaving}
+                disabled={saveUi.saving}
                 className="shrink-0 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow hover:bg-blue-700 disabled:bg-gray-400"
               >
-                {saveSaving ? 'Saving…' : 'Save this schedule'}
+                {saveUi.saving ? 'Saving…' : 'Save this schedule'}
               </button>
             </div>
-            {saveMessage && (
+            {saveUi.message && (
               <p className="mb-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
-                {saveMessage}
+                {saveUi.message}
               </p>
             )}
-            {saveError && (
-              <p className="mb-3 text-sm text-red-800 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{saveError}</p>
+            {saveUi.error && (
+              <p className="mb-3 text-sm text-red-800 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{saveUi.error}</p>
             )}
 
             {combinationOptions.length > 0 && activeCombination?.recommended_courses?.length > 0 ? (
               <>
-                <div className="border-b border-gray-100 pb-4 mb-4">
-                  <p className="text-sm font-semibold text-gray-800 mb-2">1. Pick a class combination</p>
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {combinationOptions.map((combo, idx) => {
-                      const cardPreviewMap = sectionMapFromVariant(combo.schedule_variants?.[0]);
-                      const cardOmitted = new Set(combo.schedule_calendar_omitted_courses ?? []);
-                      return (
-                        <button
-                          key={combo.combination_id ?? idx}
-                          type="button"
-                          onClick={() => {
-                            setSelectedCombinationIndex(idx);
-                            setSelectedVariantIndex(0);
-                          }}
-                          className={`text-left rounded-xl border-2 p-4 transition shadow-sm ${
-                            idx === selectedCombinationIndex
-                              ? 'border-teal-700 bg-teal-50 ring-2 ring-teal-200'
-                              : 'border-gray-200 bg-white hover:border-teal-300 hover:bg-gray-50'
-                          }`}
-                        >
-                          <div className="flex justify-between items-start gap-2 mb-2">
-                            <span className="font-bold text-teal-900">{combo.combination_label || `Option ${idx + 1}`}</span>
-                            <span className="text-xs font-semibold text-gray-600 shrink-0">{combo.generated_credits} cr</span>
-                          </div>
-                          <ul className="text-xs text-gray-700 space-y-1.5">
-                            {(combo.recommended_courses ?? []).map((course) => {
-                              const sec = cardPreviewMap.get(course.id);
-                              const sched = cardOmitted.has(course.id) ? '' : meetingSummary(sec);
-                              const rightNote = sched
-                                ? sched
-                                : cardOmitted.has(course.id)
-                                  ? 'No time in catalog'
-                                  : '';
-                              return (
-                                <li
-                                  key={course.id}
-                                  className="flex justify-between gap-2 items-baseline min-w-0"
-                                  title={`${course.id}: ${course.name}`}
-                                >
-                                  <div className="min-w-0 truncate">
-                                    <span className="font-semibold text-gray-800">{course.id}</span>
-                                    <span className="text-gray-500"> ({course.credits} cr)</span>
-                                  </div>
-                                  {rightNote ? (
-                                    <span className="text-[10px] text-gray-600 text-right shrink-0 max-w-[52%] leading-tight">
-                                      {cardOmitted.has(course.id) ? (
-                                        <span className="text-amber-800/90">{rightNote}</span>
-                                      ) : (
-                                        rightNote
-                                      )}
-                                    </span>
-                                  ) : null}
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                <CombinationSelector
+                  combinationOptions={combinationOptions}
+                  selectedCombinationIndex={selectedCombinationIndex}
+                  onSelectCombination={(idx) => {
+                    setSelectedCombinationIndex(idx);
+                    setSelectedVariantIndex(0);
+                  }}
+                />
                 <ul className="space-y-2 border-b border-gray-100 pb-4 mb-4">
                   {(activeCombination.recommended_courses ?? []).map((course) => {
                     const sec = activeSectionMap.get(course.id);

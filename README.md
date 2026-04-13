@@ -1,63 +1,27 @@
-# 🎓 NinerPath
+# NinerPath
 
-NinerPath is a modern, full-stack student scheduling application. It uses a **Hybrid Data Architecture** to securely manage student data while simulating external university APIs for course catalogs.
+NinerPath is a modern, full-stack student scheduling application designed to streamline degree auditing and course registration. It utilizes a decoupled client-server architecture, securely managing user authentication and saved schedules while simulating external university APIs through a local JSON mock data architecture.
 
-## 🛠 Tech Stack
+## Tech Stack
 * **Frontend:** React, Vite, Tailwind CSS v3
 * **Backend:** Python, FastAPI
-* **Database & Auth:** PostgreSQL (via Supabase)
-* **Mock Data:** Local JSON architecture
+* **Database & Authentication:** PostgreSQL (via Supabase)
+* **Data Layer:** Local JSON architecture (simulated course catalogs and student histories)
 
 ---
 
-## 🚀 Getting Started (Local Development)
+## Architecture Overview
 
-To run this project on your machine, you will need to run both the frontend and backend servers simultaneously.
+The application follows a decoupled client-server model, ensuring horizontal scalability and strict separation of concerns.
 
-### Prerequisites
-* Node.js installed
-* Python 3.8+ installed
-* Ask Josh for the Supabase `.env` keys.
+### Backend (FastAPI)
+The backend utilizes a Layered/Service-Oriented Architecture (SOA):
+* **Routing & Presentation:** (`main.py`, `api_schemas.py`) Uses Pydantic for strict data validation and FastAPI for RESTful routing.
+* **Business Logic:** (`scheduler_service.py`, `degree_audit.py`, `catalog.py`) Handles the 0/1 Knapsack Dynamic Programming algorithms for schedule generation, prerequisite enforcement, and degree deficit calculations.
+* **Data Access:** (`data_access.py`, `persistence.py`) Manages in-memory caching for JSON reads to prevent disk I/O bottlenecks and handles Supabase database interactions.
 
-### 1. Clone the Repository
-```bash
-git clone [https://github.com/jfoste81/NinerPath.git](https://github.com/jfoste81/NinerPath.git)
-cd NinerPath
-```
-
-### 2. Backend Setup (Terminal 1)
-```bash
-cd backend
-python -m venv venv
-
-# Activate the virtual environment
-# On Windows: venv\Scripts\activate
-# On Mac/Linux: source venv/bin/activate
-
-pip install fastapi uvicorn supabase python-dotenv
-
-# Create your environment file
-touch .env
-# Add SUPABASE_URL and SUPABASE_KEY to the .env file
-
-# Start the server
-uvicorn main:app --reload
-```
-
-### 3. Frontend Setup (Terminal 2)
-```bash
-cd frontend
-npm install
-
-# Create your environment file
-touch .env
-# Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to the .env file
-
-# Start the frontend
-npm run dev
-```
-
-### 4. Testing the App
-1. Open `http://localhost:5173` in your browser.
-2. Sign up with an email listed in `backend/data/student_history.json` (e.g., `sarah@uncc.edu`) to see dynamic mock data load automatically.
-   1. Passwords to the accounts should be `Testing123!`
+### Frontend (React)
+The frontend employs a Component-Driven Architecture:
+* **Data Layer (Custom Hooks):** Encapsulates all side effects, fetch logic, and loading/error states (e.g., `useScheduleGeneration`, `useDashboardData`).
+* **Container Layer:** Page-level orchestrators (`SchedulePage.jsx`, `DegreeHomePage.jsx`) that fetch data and distribute it to child components.
+* **Presentation Layer:** Isolated UI components (`TimePreferencePanel.jsx`, `CombinationSelector.jsx`) that handle rendering and local interactions to prevent application-wide re-renders.
