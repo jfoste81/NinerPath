@@ -1,4 +1,4 @@
-export const API_BASE = import.meta.env.VITE_API_BASE ?? 'https://ninerpath.onrender.com/';
+export const API_BASE = import.meta.env.VITE_API_BASE ?? 'https://ninerpath.onrender.com';
 
 export const CONCENTRATIONS_BY_DEGREE = {
   bs_computer_science: [
