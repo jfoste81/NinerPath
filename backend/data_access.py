@@ -1,4 +1,4 @@
-"""File-backed JSON reads/writes; student_history is cached in memory (Phase 2)."""
+"""File-backed JSON reads/writes; student_history is cached in memory"""
 from __future__ import annotations
 
 import copy

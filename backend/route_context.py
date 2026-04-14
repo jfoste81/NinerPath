@@ -1,4 +1,4 @@
-"""Shared student-history and degree/concentration resolution for API routes (Phase 5)."""
+"""Shared student-history and degree/concentration resolution for API routes"""
 from __future__ import annotations
 
 import copy

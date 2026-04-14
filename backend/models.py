@@ -1,4 +1,4 @@
-"""Scheduling and standing constants (Phase 1 split from main)."""
+"""Scheduling and standing constants"""
 
 # Full-time floor and typical target for generated recommendations (credit hours)
 SCHEDULE_TARGET_MIN_CREDITS = 12

@@ -82,6 +82,10 @@ export default function SchedulePage({ session, onSignOut }) {
   }, [activeCombination?.schedule_calendar_omitted_courses]);
 
   useEffect(() => {
+    document.title = "NinerPath | Schedule Sorcerer"; // Not to be confused with the Scheduler of a similar name
+  }, []);
+
+  useEffect(() => {
     setSelectedCombinationIndex((i) => {
       const n = combinationOptions.length;
       if (n === 0) return 0;

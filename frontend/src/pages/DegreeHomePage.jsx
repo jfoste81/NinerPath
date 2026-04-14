@@ -214,6 +214,10 @@ export default function DegreeHomePage({ session, onSignOut }) {
   });
 
   useEffect(() => {
+    document.title = "NinerPath | Degree Progress";
+  }, []);
+
+  useEffect(() => {
     const h = dashboardData?.history;
     if (!session || mockPrefsApplied || !h?.degree_plan) return;
     const opts = CONCENTRATIONS_BY_DEGREE[h.degree_plan];

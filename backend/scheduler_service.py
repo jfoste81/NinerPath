@@ -1,4 +1,4 @@
-"""Schedule generation, section variants, calendar/ICS helpers (Phase 1)."""
+"""Schedule generation, section variants, calendar/ICS helpers"""
 from __future__ import annotations
 
 import math

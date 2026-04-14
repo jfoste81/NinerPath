@@ -1,4 +1,4 @@
-"""Degree plan normalization for schedule and audit (no FastAPI)."""
+"""Degree plan normalization for schedule and audit"""
 from __future__ import annotations
 
 from typing import Any

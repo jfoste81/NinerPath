@@ -1,4 +1,4 @@
-"""Degree audit table construction (Phase 1)."""
+"""Degree audit table construction"""
 from __future__ import annotations
 
 import re

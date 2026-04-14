@@ -41,6 +41,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    
+    # Prevents browsers from guessing the file type (stops stealthy malicious files)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    
+    # Prevents other websites from embedding NinerPath in an invisible iframe (stops Clickjacking)
+    response.headers["X-Frame-Options"] = "DENY"
+    
+    # Forces browsers to only use HTTPS when talking to NinerPath server
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    
+    # Controls how much information the browser sends when clicking a link
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    
+    # Prevents basic Cross-Site Scripting (XSS) attacks
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+
+    return response
 
 def _validate_query_model(model_cls: type, request: Request):
     try:

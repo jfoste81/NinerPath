@@ -1,4 +1,4 @@
-"""Saved schedules: local JSON + optional Supabase (Phase 1)."""
+"""Saved schedules: local JSON + optional Supabase"""
 from __future__ import annotations
 
 import asyncio
