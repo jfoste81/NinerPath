@@ -2,6 +2,11 @@
 
 NinerPath is a modern, full-stack student scheduling application designed to streamline degree auditing and course registration. It utilizes a decoupled client-server architecture, securely managing user authentication and saved schedules while simulating external university APIs through a local JSON mock data architecture.
 
+Access the website at:
+```
+https://ninerpath.vercel.app/
+```
+
 ## Tech Stack
 * **Frontend:** React, Vite, Tailwind CSS v3
 * **Backend:** Python, FastAPI
